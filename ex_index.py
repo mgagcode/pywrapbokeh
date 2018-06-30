@@ -19,19 +19,13 @@ from numpy import pi, arange, sin, linspace
 from pywrapbokeh import WrapBokeh
 from ex_a import ex_a
 
+from ex_utils import _redirect_lookup_table
+
 app = Flask(__name__)
 app.register_blueprint(ex_a)
 
 
 widgets = None
-
-
-def _redirect_example_multi_select(value):
-    if 'a' in value:   return "/a/"
-    elif 'b' in value: return "/b/"
-    elif 'c' in value: return "/c/"
-    elif 'd' in value: return "/"
-    else: return None
 
 
 @app.route("/", methods=['GET'])
@@ -45,11 +39,11 @@ def test_main():
     widgets.process_url(args)
 
     # redirect to another page based on widget data...
-    _redirect = _redirect_example_multi_select(widgets.get_value("ms1"))
+    _redirect = _redirect_lookup_table(widgets.get_value("sel_goto_page"))
     if _redirect: return redirect(_redirect)
 
     # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
-    amplitude = float(args.get("amp", 1.0))
+    amplitude = float(args.get("slider_amp", 1.0))
     x = arange(-2 * pi, 2 * pi, 0.1)
     y = amplitude * sin(x)
     y2 = linspace(0, 100, len(y))
@@ -62,8 +56,8 @@ def test_main():
     p.add_layout(LinearAxis(y_range_name="foo"), 'left')
 
     doc_layout = layout(sizing_mode='scale_width')
-    doc_layout.children.append(row(widgets.get_dom("Start"), Spacer(width=50), widgets.get_dom("End")))
-    doc_layout.children.append(row(widgets.get_dom("amp"), widgets.get_dom("ms1")))
+    doc_layout.children.append(row(widgets.get_dom("datepair_start"), Spacer(width=50), widgets.get_dom("datepair_end")))
+    doc_layout.children.append(row(widgets.get_dom("slider_amp"), widgets.get_dom("msel_fruit"), widgets.get_dom("sel_goto_page")))
     doc_layout.children.append(column(p))
 
     d = widgets.dominate_document()
@@ -72,25 +66,38 @@ def test_main():
 
 
 def init_widgets():
-    start = {"name": "Start", "title": "Start", "value": datetime.today(), "width": 150}
-    end = {"name": "End", "title": "End", "value": datetime.today(), "width": 150}
+    """ init widgets
+    :return: True on success, False otherwise
+    """
+    start = {"name": "datepair_start", "title": "Start", "value": datetime.today(), "width": 150}
+    end = {"name": "datepair_end", "title": "End", "value": datetime.today(), "width": 150}
     if not widgets.add_datepicker_pair(start, end): return False
 
-    if not widgets.add_slider(name="amp",
+    if not widgets.add_slider(name="slider_amp",
                               title="Amplitude",
                               value=1,
                               start=0.1,
                               end=2.0,
                               step=0.1): return False
 
-    if not widgets.add_multi_select(name="ms1",
-                                    options=[('a', '1'), ('b', '2'), ('c', '3'), ('d', 'Home')],
+    if not widgets.add_multi_select(name="msel_fruit",
+                                    options=[('a', 'Apples'), ('b', 'Strawberries'), ('c', 'Oranges'), ('d', 'Grapefruit')],
                                     size=2,
                                     width=30): return False
 
+    if not widgets.add_select(name="sel_goto_page",
+                              options=[('_', 'Select Next Page'), ('a', 'Page a'), ('b', 'Page b'), ('c', 'Page c')],
+                              size=2,
+                              value=None,
+                              width=30): return False
+
+    return True
+
 
 def reset_widgets():
-    widgets.set_value("amp", 1.0)
+    """ reset widget values to some default
+    """
+    widgets.set_value("slider_amp", 1.0)
 
 
 widgets = WrapBokeh()

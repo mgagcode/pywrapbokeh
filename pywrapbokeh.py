@@ -3,7 +3,7 @@
 
 from datetime import datetime, timedelta
 from bokeh.embed import components
-from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput
+from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models import Slider
 from bokeh.models.callbacks import CustomJS
 
@@ -156,6 +156,16 @@ class WrapBokeh(object):
         ms["value"] = selected
         ms["obj"] = MultiSelect(options=ms["options"], value=selected, title=ms["title"])
 
+    def _select_handler(self, args, s):
+        """
+        :param args: dict URL args
+        :param s: select widget
+        """
+        selected = args.get(s["arg_name"], "")
+        s["value"] = selected
+        s["obj"] = Select(options=s["options"], value=selected, title=s["title"])
+
+
     def _set_all_callbacks(self):
         for key in self.widgets:
             if self.widgets[key]["obj"] is not None:
@@ -253,6 +263,32 @@ class WrapBokeh(object):
             "handler": self._multi_select_handler
         }
         self._multi_select_handler({}, self.widgets[name])
+        self._set_all_callbacks()
+        return True
+
+    def add_select(self, name, options, value=None, title=None, size=None, width=None):
+        """ Create a (single) select widget
+        :param name:
+        :param options: [ ( "<return_value>", "<display_value>"), ... ]
+        :param value:
+        :param title:
+        :return: True on success, False otherwise
+        """
+
+        if name in self.widgets: return False
+
+        self.widgets[name] = {
+            'obj': None,
+            'value_field': 'value',
+            'arg_name': '{}'.format(name),
+            'value': value,
+            'title': title,
+            'options': options,
+            'width': width,
+            'size': size,
+            "handler": self._select_handler
+        }
+        self._select_handler({}, self.widgets[name])
         self._set_all_callbacks()
         return True
 
