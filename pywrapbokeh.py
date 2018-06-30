@@ -280,6 +280,11 @@ class WrapBokeh(object):
         return result
 
     def render(self, d, layout):
+        """ render the layout in the current dominate document
+        :param d: dominate document
+        :param layout: bokeh layout object
+        :return: dominate document
+        """
         _script, _div = components(layout)
         d.body += raw(_script)
         d.body += raw(_div)

@@ -17,8 +17,12 @@ from flask import request
 from numpy import pi, arange, sin, linspace
 
 from pywrapbokeh import WrapBokeh
+from ex_a import ex_a
 
 app = Flask(__name__)
+app.register_blueprint(ex_a)
+
+
 widgets = None
 
 
@@ -38,10 +42,10 @@ def test_main():
     # reset page to initial values, if there are no parms
     if not args: reset_widegts_main()
 
-    widgets.process_url(args)
+    widgets_main.process_url(args)
 
     # redirect to another page based on widget data...
-    _redirect = _redirect_example_multi_select(widgets.get_value("ms1"))
+    _redirect = _redirect_example_multi_select(widgets_main.get_value("ms1"))
     if _redirect: return redirect(_redirect)
 
     # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
@@ -58,58 +62,40 @@ def test_main():
     p.add_layout(LinearAxis(y_range_name="foo"), 'left')
 
     doc_layout = layout(sizing_mode='scale_width')
-    doc_layout.children.append(row(widgets.get_dom("Start"), Spacer(width=50), widgets.get_dom("End")))
-    doc_layout.children.append(row(widgets.get_dom("amp"), widgets.get_dom("ms1")))
+    doc_layout.children.append(row(widgets_main.get_dom("Start"), Spacer(width=50), widgets_main.get_dom("End")))
+    doc_layout.children.append(row(widgets_main.get_dom("amp"), widgets_main.get_dom("ms1")))
     doc_layout.children.append(column(p))
 
-    d = widgets.dominate_document()
-    d = widgets.render(d, doc_layout)
-    return "{}".format(d)
-
-
-@app.route("/c/", methods=['GET'])
-@app.route("/b/", methods=['GET'])
-@app.route("/a/", methods=['GET'])
-def test_pages():
-    args = request.args.to_dict()
-    print(args)
-
-    widgets.process_url(args)
-
-    # redirect to another page based on widget data...
-    _redirect = _redirect_example_multi_select(widgets.get_value("ms1"))
-    if _redirect: return redirect(_redirect)
-
-    doc_layout = layout(sizing_mode='scale_width')
-    doc_layout.children.append(row(widgets.get_dom("ms1")))
-
-    d = widgets.dominate_document()
-    d = widgets.render(d, doc_layout)
+    d = widgets_main.dominate_document()
+    d = widgets_main.render(d, doc_layout)
     return "{}".format(d)
 
 
 def init_widgets_main():
     start = {"name": "Start", "title": "Start", "value": datetime.today(), "width": 150}
     end = {"name": "End", "title": "End", "value": datetime.today(), "width": 150}
-    if not widgets.add_datepicker_pair(start, end): return False
+    if not widgets_main.add_datepicker_pair(start, end): return False
 
-    if not widgets.add_slider(name="amp",
+    if not widgets_main.add_slider(name="amp",
                               title="Amplitude",
                               value=1,
                               start=0.1,
                               end=2.0,
                               step=0.1): return False
 
-    if not widgets.add_multi_select(name="ms1",
+    if not widgets_main.add_multi_select(name="ms1",
                                     options=[('a', '1'), ('b', '2'), ('c', '3'), ('d', 'Home')],
                                     size=2,
                                     width=30): return False
 
 
 def reset_widegts_main():
-    widgets.set_value("amp", 1.0)
+    widgets_main.set_value("amp", 1.0)
 
-widgets = WrapBokeh()
+
+
+
+widgets_main = WrapBokeh()
 init_widgets_main()
 
 app.run(host="0.0.0.0", port=6800)
