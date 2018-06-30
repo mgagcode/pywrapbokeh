@@ -1,8 +1,20 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
+"""
+Example using WrapBokeh
+
+"""
+
+from datetime import datetime, timedelta
 from bokeh.layouts import column, row, layout, Spacer
+from bokeh.plotting import figure
+from bokeh.models import LinearAxis, Range1d
 
-from flask import Flask, redirect
+from flask import Flask, redirect, abort
 from flask import request
+
+from numpy import pi, arange, sin, linspace
 
 from pywrapbokeh import WrapBokeh
 
@@ -19,11 +31,13 @@ def _redirect_example_multi_select(value):
 
 
 @app.route("/", methods=['GET'])
-def test():
-    d = widgets.dominate_document()
-
+def test_main():
     args = request.args.to_dict()
     print(args)
+
+    if not args:
+        if not init_widgets_main():
+            abort(403, 'Internal Error')
 
     widgets.process_url(args)
 
@@ -31,10 +45,25 @@ def test():
     _redirect = _redirect_example_multi_select(widgets.get_value("ms1"))
     if _redirect: return redirect(_redirect)
 
+    # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
+    amplitude = float(args.get("amp", 1.0))
+    x = arange(-2 * pi, 2 * pi, 0.1)
+    y = amplitude * sin(x)
+    y2 = linspace(0, 100, len(y))
+    p = figure(x_range=(-6.5, 6.5), y_range=(-1.1, 1.1), width=400, height=200)
+
+    p.circle(x, y, color="red")
+
+    p.extra_y_ranges = {"foo": Range1d(start=0, end=100)}
+    p.circle(x, y2, color="blue", y_range_name="foo")
+    p.add_layout(LinearAxis(y_range_name="foo"), 'left')
+
     doc_layout = layout(sizing_mode='scale_width')
     doc_layout.children.append(row(widgets.get_dom("Start"), Spacer(width=50), widgets.get_dom("End")))
-    doc_layout.children.append(row(widgets.get_dom("Slider1"), widgets.get_dom("ms1")))
+    doc_layout.children.append(row(widgets.get_dom("amp"), widgets.get_dom("ms1")))
+    doc_layout.children.append(column(p))
 
+    d = widgets.dominate_document()
     d = widgets.render(d, doc_layout)
     return "{}".format(d)
 
@@ -42,9 +71,7 @@ def test():
 @app.route("/c/", methods=['GET'])
 @app.route("/b/", methods=['GET'])
 @app.route("/a/", methods=['GET'])
-def test_example():
-    d = widgets.dominate_document()
-
+def test_pages():
     args = request.args.to_dict()
     print(args)
 
@@ -57,22 +84,30 @@ def test_example():
     doc_layout = layout(sizing_mode='scale_width')
     doc_layout.children.append(row(widgets.get_dom("ms1")))
 
+    d = widgets.dominate_document()
     d = widgets.render(d, doc_layout)
     return "{}".format(d)
 
 
+def init_widgets_main():
+    print("init")
+    start = {"name": "Start", "title": "Start", "value": datetime.today(), "width": 150}
+    end = {"name": "End", "title": "End", "value": datetime.today(), "width": 150}
+    if not widgets.add_datepicker_pair(start, end): return False
+
+    if not widgets.add_slider(name="amp",
+                              title="Amplitude",
+                              value=1,
+                              start=0.1,
+                              end=2.0,
+                              step=0.1): return False
+
+    if not widgets.add_multi_select(name="ms1",
+                                    options=[('a', '1'), ('b', '2'), ('c', '3'), ('d', 'Home')],
+                                    size=2,
+                                    width=30): return False
+
+
 widgets = WrapBokeh()
-
-start = {"name": "Start", "title": "Start", "value": datetime.today(), "width": 150}
-end   = {"name": "End",   "title": "End",   "value": datetime.today(), "width": 150}
-widgets.add_datepicker_pair(start, end)
-
-widgets.add_slider(name="Slider1", title="Age", value=25, start=1, end=99)
-
-widgets.add_multi_select(name="ms1",
-                         options=[('a', '1'), ('b', '2'), ('c', '3'), ('d', 'Home')],
-                         size=2,
-                         width=30)
-
 
 app.run(host="0.0.0.0", port=6800)

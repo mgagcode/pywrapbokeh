@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 from datetime import datetime, timedelta
 from bokeh.embed import components
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput
@@ -10,6 +13,9 @@ from dominate.util import raw
 
 
 class WrapBokeh(object):
+    """
+    TODO....
+    """
 
     def __init__(self):
         self.widgets = {}
@@ -133,9 +139,12 @@ class WrapBokeh(object):
         :param args: dict URL args
         :param input: input widget
         """
+        print(slider)
         _value = args.get(slider["arg_name"], slider["value"])
-        if _value == 'NaN': _value = slider["value"]
-        slider["value"] = int(_value)
+        if _value == 'NaN':
+            _value = slider["value"]
+        if isinstance(_value, str):
+            slider["value"] = float(_value) if "." in _value else int(_value)
         slider["obj"] = Slider(title=slider["title"], value=slider["value"], start=slider["start"], end=slider["end"],
                                step=slider["step"], callback_policy='mouseup')
 
@@ -218,6 +227,7 @@ class WrapBokeh(object):
             "width": width,
             "handler": self._slider_handler
         }
+        print(self.widgets[name])
         self._slider_handler({}, self.widgets[name])
         self._set_all_callbacks()
         return True
