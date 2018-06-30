@@ -1,21 +1,21 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 from datetime import datetime, timedelta
 from bokeh.embed import components
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput
 from bokeh.models import Slider
 from bokeh.models.callbacks import CustomJS
-from bokeh.layouts import column, row, layout, Spacer
-
-from flask import Flask, redirect
-from flask import request
 
 from dominate.tags import *
 import dominate
 from dominate.util import raw
 
-app = Flask(__name__)
-
 
 class WrapBokeh(object):
+    """
+    TODO....
+    """
 
     def __init__(self):
         self.widgets = {}
@@ -140,8 +140,10 @@ class WrapBokeh(object):
         :param input: input widget
         """
         _value = args.get(slider["arg_name"], slider["value"])
-        if _value == 'NaN': _value = slider["value"]
-        slider["value"] = int(_value)
+        if _value == 'NaN':
+            _value = slider["value"]
+        if isinstance(_value, str):
+            slider["value"] = float(_value) if "." in _value else int(_value)
         slider["obj"] = Slider(title=slider["title"], value=slider["value"], start=slider["start"], end=slider["end"],
                                step=slider["step"], callback_policy='mouseup')
 
@@ -267,6 +269,9 @@ class WrapBokeh(object):
     def get_value(self, name):
         return self.widgets[name]["value"]
 
+    def set_value(self, name, value):
+        self.widgets[name]["value"] = value
+
     def get_value_all(self):
         result = {}
         for key, widget in self.widgets.items():
@@ -281,71 +286,4 @@ class WrapBokeh(object):
         return d
 
 
-def _redirect_example_multi_select(value):
-    if 'a' in value:   return "/a/"
-    elif 'b' in value: return "/b/"
-    elif 'c' in value: return "/c/"
-    elif 'd' in value: return "/"
-    else: return None
 
-
-widgets = None
-
-@app.route("/", methods=['GET'])
-def test():
-    d = widgets.dominate_document()
-
-    args = request.args.to_dict()
-    print(args)
-
-    widgets.process_url(args)
-
-    # redirect to another page based on widget data...
-    _redirect = _redirect_example_multi_select(widgets.get_value("ms1"))
-    if _redirect: return redirect(_redirect)
-
-    doc_layout = layout(sizing_mode='scale_width')
-    doc_layout.children.append(row(widgets.get_dom("Start"), Spacer(width=50), widgets.get_dom("End")))
-    doc_layout.children.append(row(widgets.get_dom("Slider1"), widgets.get_dom("ms1")))
-
-    d = widgets.render(d, doc_layout)
-    return "{}".format(d)
-
-
-@app.route("/c/", methods=['GET'])
-@app.route("/b/", methods=['GET'])
-@app.route("/a/", methods=['GET'])
-def test_example():
-    d = widgets.dominate_document()
-
-    args = request.args.to_dict()
-    print(args)
-
-    widgets.process_url(args)
-
-    # redirect to another page based on widget data...
-    _redirect = _redirect_example_multi_select(widgets.get_value("ms1"))
-    if _redirect: return redirect(_redirect)
-
-    doc_layout = layout(sizing_mode='scale_width')
-    doc_layout.children.append(row(widgets.get_dom("ms1")))
-
-    d = widgets.render(d, doc_layout)
-    return "{}".format(d)
-
-
-widgets = WrapBokeh()
-
-start = {"name": "Start", "title": "Start", "value": datetime.today(), "width": 150}
-end   = {"name": "End",   "title": "End",   "value": datetime.today(), "width": 150}
-widgets.add_datepicker_pair(start, end)
-
-widgets.add_slider(name="Slider1", title="Age", value=25, start=1, end=99)
-
-widgets.add_multi_select(name="ms1",
-                         options=[('a', '1'), ('b', '2'), ('c', '3'), ('d', 'Home')],
-                         size=2,
-                         width=30)
-
-
-app.run(host="0.0.0.0", port=6800)
