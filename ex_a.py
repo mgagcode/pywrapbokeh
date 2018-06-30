@@ -9,7 +9,7 @@ from flask import Blueprint, request, redirect
 from bokeh.layouts import column, row, layout, Spacer
 from pywrapbokeh import WrapBokeh
 
-widgets_a = None
+widgets = None
 
 def _redirect_example_multi_select(value):
     if 'a' in value:   return "/a/"
@@ -25,30 +25,30 @@ def page_a():
     args = request.args.to_dict()
     print(args)
 
-    widgets_a.process_url(args)
+    widgets.process_url(args)
 
     # redirect to another page based on widget data...
-    _redirect = _redirect_example_multi_select(widgets_a.get_value("ms1"))
+    _redirect = _redirect_example_multi_select(widgets.get_value("ms1"))
     if _redirect: return redirect(_redirect)
 
     doc_layout = layout(sizing_mode='scale_width')
-    doc_layout.children.append(row(widgets_a.get_dom("ms1")))
+    doc_layout.children.append(row(widgets.get_dom("ms1")))
 
-    d = widgets_a.dominate_document()
-    d = widgets_a.render(d, doc_layout)
+    d = widgets.dominate_document()
+    d = widgets.render(d, doc_layout)
     return "{}".format(d)
 
 
-def init_widgets_a():
-    if not widgets_a.add_multi_select(name="ms1",
+def init_widgets():
+    if not widgets.add_multi_select(name="ms1",
                                     options=[('a', '1'), ('b', '2'), ('c', '3'), ('d', 'Home')],
                                     size=2,
                                     width=30): return False
 
 
-def reset_widegts_main():
+def reset_widgets():
     pass
 
 
-widgets_a = WrapBokeh()
-init_widgets_a()
+widgets = WrapBokeh()
+init_widgets()
