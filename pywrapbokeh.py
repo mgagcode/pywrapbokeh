@@ -139,7 +139,6 @@ class WrapBokeh(object):
         :param args: dict URL args
         :param input: input widget
         """
-        print(slider)
         _value = args.get(slider["arg_name"], slider["value"])
         if _value == 'NaN':
             _value = slider["value"]
@@ -227,7 +226,6 @@ class WrapBokeh(object):
             "width": width,
             "handler": self._slider_handler
         }
-        print(self.widgets[name])
         self._slider_handler({}, self.widgets[name])
         self._set_all_callbacks()
         return True
@@ -270,6 +268,9 @@ class WrapBokeh(object):
 
     def get_value(self, name):
         return self.widgets[name]["value"]
+
+    def set_value(self, name, value):
+        self.widgets[name]["value"] = value
 
     def get_value_all(self):
         result = {}

@@ -35,9 +35,8 @@ def test_main():
     args = request.args.to_dict()
     print(args)
 
-    if not args:
-        if not init_widgets_main():
-            abort(403, 'Internal Error')
+    # reset page to initial values, if there are no parms
+    if not args: reset_widegts_main()
 
     widgets.process_url(args)
 
@@ -90,7 +89,6 @@ def test_pages():
 
 
 def init_widgets_main():
-    print("init")
     start = {"name": "Start", "title": "Start", "value": datetime.today(), "width": 150}
     end = {"name": "End", "title": "End", "value": datetime.today(), "width": 150}
     if not widgets.add_datepicker_pair(start, end): return False
@@ -108,6 +106,10 @@ def init_widgets_main():
                                     width=30): return False
 
 
+def reset_widegts_main():
+    widgets.set_value("amp", 1.0)
+
 widgets = WrapBokeh()
+init_widgets_main()
 
 app.run(host="0.0.0.0", port=6800)
