@@ -59,4 +59,6 @@ def reset_widgets():
 
 
 widgets = WrapBokeh(PAGE_URL, app.logger)
-init_widgets()
+if not init_widgets():
+    app.logger.error("Failed to init widgets")
+    

@@ -50,18 +50,6 @@ class WrapBokeh(object):
 
         with d.body:
             js = """
-            function encodeQueryData(data) {
-                var obj = [];
-                for (let d in data) {
-                    var item = encodeURIComponent(d) + ":" + encodeURIComponent(data[d])
-                    obj.push({item});
-                }
-                return obj;
-            }
-            """
-            script(raw(js))
-
-            js = """
             function postAndRedirect(url, postData) {
                 var postFormStr = "<form id='virtualForm' method='POST' action='" + url + "'>";
             
@@ -72,8 +60,8 @@ class WrapBokeh(object):
                 }
             
                 postFormStr += "</form>";
-            
                 //alert(postFormStr);
+                
                 var formElement = $(postFormStr);
             
                 $('body').append(formElement);
@@ -91,6 +79,8 @@ class WrapBokeh(object):
         value of the widget in the URL, for ALL widgets.
         :return: CustomJS
         """
+        # TODO: this _parms loop should be done once by the caller, _set_all_callbacks
+        #       in fact get rid of this and make it part of _set_all_callbacks()
         _parms = "{"
         _args = {}
         for w_name, w_params in self.widgets.items():
@@ -406,6 +396,10 @@ class WrapBokeh(object):
         return True
 
     def process_url(self, args):
+        """ Updates the state of every widget based on the values of each widget in args
+        - sets the callback for each widget
+        :param args: dict of every widget value by name
+        """
         for key, widget in self.widgets.items():
             if widget["obj"] is not None and widget["handler"] is not None:
                 widget["handler"](args, widget)
