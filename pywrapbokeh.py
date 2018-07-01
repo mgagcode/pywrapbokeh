@@ -61,16 +61,13 @@ class WrapBokeh(object):
             """
             script(raw(js))
 
-            #with form(method="POST", action="{}".format(self.url), name="_virtual_form", id="_virtual_form_id"):
-            #    input(type='hidden', name='json', id="_virtual_form_id")
-
             js = """
             function postAndRedirect(url, postData) {
                 var postFormStr = "<form id='virtualForm' method='POST' action='" + url + "'>";
             
                 for (var key in postData) {
                     if (postData.hasOwnProperty(key)) {
-                        postFormStr += "<input type='hidden' name='" + encodeURIComponent(key) + "' value='" + encodeURIComponent(postData[key]) + "'></input>";
+                        postFormStr += "<input type='hidden' name='" + encodeURIComponent(key) + "' value='" + unescape(encodeURIComponent(postData[key])) + "'></input>";
                     }
                 }
             
