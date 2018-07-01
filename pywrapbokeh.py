@@ -43,20 +43,38 @@ class WrapBokeh(object):
                  rel="stylesheet",
                  type="text/css")
             script(src="https://cdn.pydata.org/bokeh/release/bokeh-widgets-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+
+            script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js")
+
             meta(charset="UTF-8")
 
         with d.body:
             js = """
             function encodeQueryData(data) {
-                let ret = [];
-                for (let d in data)
-                    ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
-                return ret.join('&');
+                var obj = [];
+                for (let d in data) {
+                    var item = encodeURIComponent(d) + ":" + encodeURIComponent(data[d])
+                    obj.push({item});
+                }
+                return obj;
             }
             """
             script(raw(js))
 
+            with form(method="POST", action="{}".format(self.url), name="_virtual_form", id="_virtual_form_id"):
+                input(type='hidden', name='json', id="_virtual_form_id")
+
+            js = """
+            function makePost(json){
+                    $("#_virtual_value").val(JSON.stringify(json)); 
+                    $("#_virtual_form_id").submit();
+                    $("#_virtual_form_id").remove();                        
+            }            
+            """
+            script(raw(js))
+
         self.logger.info("created dominate document")
+        self.logger.debug(d)
         return d
 
     def _all_callback(self):
@@ -74,10 +92,10 @@ class WrapBokeh(object):
         self.logger.debug(_parms)
 
         _code = """
-                var params = {}
-                var url = '{}' + '?' + encodeQueryData(params)
-                window.location.replace(url);
-            """.format(_parms, self.url)
+               var params = {}
+               var json = encodeQueryData(params);
+               makePost(json);
+        """.format(_parms)
         self.logger.debug(_code)
         return CustomJS(args=_args, code=_code)
 
