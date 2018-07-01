@@ -15,9 +15,10 @@ from ex_utils import redirect_lookup_table
 PAGE_URL = '/a/'
 
 ex_a = Blueprint('ex_a', __name__)
-@ex_a.route(PAGE_URL, methods=['GET'])
+@ex_a.route(PAGE_URL, methods=['GET', 'POST'])
 def page_a():
-    args = request.args.to_dict()
+    if request.method == "POST": args = request.form.to_dict()
+    else: args = {}
     app.logger.info(args)
 
     widgets.process_url(args)

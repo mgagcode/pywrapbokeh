@@ -61,15 +61,27 @@ class WrapBokeh(object):
             """
             script(raw(js))
 
-            with form(method="POST", action="{}".format(self.url), name="_virtual_form", id="_virtual_form_id"):
-                input(type='hidden', name='json', id="_virtual_form_id")
+            #with form(method="POST", action="{}".format(self.url), name="_virtual_form", id="_virtual_form_id"):
+            #    input(type='hidden', name='json', id="_virtual_form_id")
 
             js = """
-            function makePost(json){
-                    $("#_virtual_value").val(JSON.stringify(json)); 
-                    $("#_virtual_form_id").submit();
-                    $("#_virtual_form_id").remove();                        
-            }            
+            function postAndRedirect(url, postData) {
+                var postFormStr = "<form id='virtualForm' method='POST' action='" + url + "'>";
+            
+                for (var key in postData) {
+                    if (postData.hasOwnProperty(key)) {
+                        postFormStr += "<input type='hidden' name='" + encodeURIComponent(key) + "' value='" + encodeURIComponent(postData[key]) + "'></input>";
+                    }
+                }
+            
+                postFormStr += "</form>";
+            
+                //alert(postFormStr);
+                var formElement = $(postFormStr);
+            
+                $('body').append(formElement);
+                $('#virtualForm').submit();
+            }         
             """
             script(raw(js))
 
@@ -92,10 +104,9 @@ class WrapBokeh(object):
         self.logger.debug(_parms)
 
         _code = """
-               var params = {}
-               var json = encodeQueryData(params);
-               makePost(json);
-        """.format(_parms)
+               var params = {};
+               postAndRedirect('{}', params);
+        """.format(_parms, self.url)
         self.logger.debug(_code)
         return CustomJS(args=_args, code=_code)
 

@@ -25,11 +25,10 @@ PAGE_URL = '/'
 ex_index = Blueprint('ex_index', __name__)
 @ex_index.route(PAGE_URL, methods=['GET', 'POST'])
 def test_main():
-    args = request.args.to_dict()
-    app.logger.info(args)
 
-    aargs = request.get_json(silent=True)
-    print("A: {}".format(aargs))
+    if request.method == "POST": args = request.form.to_dict()
+    else: args = {}
+    app.logger.info(args)
 
     # reset page to initial values, if there are no parms
     if not args: reset_widgets()
