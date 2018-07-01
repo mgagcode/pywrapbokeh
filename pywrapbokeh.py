@@ -73,28 +73,23 @@ class WrapBokeh(object):
         """ Handler for a start/end DatePicker pair of widgets
         :param args: dict URL args
         :param start: start DatePicker widget
-        :param end: end DatePicker widget
         """
 
         end = self.widgets[start["pair"]]
 
-        d_yesterday = datetime.today() - timedelta(days=1)
-        d_year_ago = datetime.today() - timedelta(days=365)
-
         # handle args related to which date picker the user last used
         if not start['arg_name'] in args:
             # the url did not have this value, assume first time being called
-            min_end_date = datetime.today() - timedelta(days=1)
-            curr_start_date = d_yesterday
+            curr_start_date = start["value"]
         elif args[start['arg_name']].split(".")[0].isdigit():
             # when the end DatePicker is used, start Datepicker time comes as a epoch with ms
             curr_start_date = datetime.fromtimestamp(int(args[start['arg_name']].split(".")[0]) / 1000)
-            min_end_date = curr_start_date
+            end["min_date"] = curr_start_date
         else:
             curr_start_date = datetime.strptime(args[start['arg_name']], "%a %b %d %Y")  # 'Mon Jun 18 2018'
             curr_start_date += timedelta(
                 days=1)  # this fixes a bug where the date picked is one day behind the user selection
-            min_end_date = curr_start_date
+            end["min_date"] = curr_start_date
 
         if not end['arg_name'] in args:
             curr_end_date = datetime.today()
@@ -106,12 +101,42 @@ class WrapBokeh(object):
                 days=1)  # this fixes a bug where the date picked is one day behind the user selection
 
         start["value"] = curr_start_date
-        start['obj'] = DatePicker(title=start["title"], min_date=d_year_ago, max_date=datetime.today(),
-                                  value=curr_start_date, width=start["width"])
+        start['obj'] = DatePicker(title=start["title"],
+                                  min_date=start["min_date"],
+                                  max_date=start["max_date"],
+                                  value=curr_start_date,
+                                  width=start["width"])
 
         end["value"] = curr_end_date
-        end['obj'] = DatePicker(title=end["title"], min_date=min_end_date, max_date=datetime.today(),
-                                value=curr_end_date, width=end["width"])
+        end['obj'] = DatePicker(title=end["title"],
+                                min_date=end["min_date"],
+                                max_date=end["max_date"],
+                                value=curr_end_date,
+                                width=end["width"])
+
+    def _datepicker_handler(self, args, datep):
+        """ Handler for a DatePicker
+        :param args: dict URL args
+        :param start: start DatePicker widget
+        """
+
+        # handle args related to which date picker the user last used
+        if not datep['arg_name'] in args:
+            # the url did not have this value, assume first time being called
+            curr_date = datep["value"]
+        elif args[datep['arg_name']].split(".")[0].isdigit():
+            # when the end DatePicker is used, start Datepicker time comes as a epoch with ms
+            curr_date = datetime.fromtimestamp(int(args[datep['arg_name']].split(".")[0]) / 1000)
+        else:
+            curr_date = datetime.strptime(args[datep['arg_name']], "%a %b %d %Y")  # 'Mon Jun 18 2018'
+            curr_date += timedelta(days=1)  # this fixes a bug where the date picked is one day behind the user selection
+
+        datep["value"] = curr_date
+        datep['obj'] = DatePicker(title=datep["title"],
+                                  min_date=datep["min_date"],
+                                  max_date=datep["max_date"],
+                                  value=curr_date,
+                                  width=datep["width"])
 
     def _multi_select_handler(self, args, ms):
         """ multi-select handler
@@ -177,36 +202,73 @@ class WrapBokeh(object):
                         { "name": <string id of widget>
                           "title": <string>
                           "value": <datetime>
+                          "min_date": <datetime>
+                          "min_date": <datetime>
                           "width": <uint or None for auto>
         :param end: dict of end date params, see start
         :return: True on success, False otherwise
         """
 
-        # TODO: determine dicts have proper params...
         if start["name"] in self.widgets: return False
         if end["name"] in self.widgets: return False
+
+        s_min_date = start.get("min_date", None)
+        s_max_date = start.get("max_date", None)
+        s_value = start.get("value", datetime.today())
+        s_title = start.get("title", "Start Title")
+        s_width = start.get("width", None)
 
         self.widgets[start["name"]] = {
             'obj': None,
             'value_field': 'value',
             'arg_name': '{}_date'.format(start["name"]),
-            'value': start["value"],
-            'title': start["title"],
-            "width": start["width"],
+            'value': s_value,
+            'min_date': s_min_date,
+            'max_date': s_max_date,
+            'title': s_title,
+            "width": s_width,
             "pair": end["name"],
             "handler": self._start_end_datepicker_handler
         }
+
+        e_min_date = end.get("min_date", None)
+        e_max_date = end.get("max_date", None)
+        e_value = end.get("value", datetime.today())
+        e_title = end.get("title", "End Title")
+        e_width = end.get("width", None)
 
         self.widgets[end["name"]] = {
             'obj': None,
             'value_field': 'value',
             'arg_name': '{}_date'.format(end["name"]),
-            'value': end["value"],
-            'title': end["title"],
-            "width": end["width"],
+            'value': e_value,
+            'min_date': e_min_date,
+            'max_date': e_max_date,
+            'title': e_title,
+            "width": e_width,
             "handler": None
         }
         self._start_end_datepicker_handler({}, self.widgets[start["name"]])
+        self._set_all_callbacks()
+        return True
+
+    def add_datepicker(self, name, title="Title", value=datetime.today(), min_date=None, max_date=None, width=None):
+
+        if name in self.widgets: return False
+
+        self.widgets[name] = {
+            'obj': None,
+            'value_field': 'value',
+            'arg_name': '{}_date'.format(name),
+            'value': value,
+            'min_date': min_date,
+            'max_date': max_date,
+            'title': title,
+            "width": width,
+            "handler": self._datepicker_handler
+        }
+
+        self._datepicker_handler({}, self.widgets[name])
         self._set_all_callbacks()
         return True
 

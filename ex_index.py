@@ -60,6 +60,7 @@ def test_main():
     doc_layout.children.append(row(widgets.get_dom("slider_amp"), widgets.get_dom("msel_fruit"), widgets.get_dom("sel_goto_page")))
     doc_layout.children.append(column(p))
 
+    # Create a dominate document, see https://github.com/Knio/dominate
     d = widgets.dominate_document()
     d = widgets.render(d, doc_layout)
     return "{}".format(d)
