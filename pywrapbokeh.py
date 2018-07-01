@@ -16,8 +16,20 @@ class WrapBokeh(object):
     """
     TODO....
     """
+    class StubLogger(object):
+        """ stubb out logger if none is provided"""
+        def info(self, *args,**kwargs): pass
+        def error(self, *args,**kwargs): pass
+        def debug(self, *args, **kwargs): pass
+        def warning(self, *args, **kwargs): pass
+        def critical(self, *args, **kwargs): pass
 
-    def __init__(self):
+    logger = StubLogger()
+
+    def __init__(self, url, logger=None):
+        self.url = url
+        if logger: self.logger = logger
+
         self.widgets = {}
 
     def dominate_document(self, bokeh_version='0.13.0'):
@@ -44,8 +56,8 @@ class WrapBokeh(object):
             """
             script(raw(js))
 
+        self.logger.info("created dominate document")
         return d
-
 
     def _all_callback(self):
         """ a bokeh CustomJS that will be called when a widget is changed, that puts the
@@ -59,14 +71,14 @@ class WrapBokeh(object):
                 _parms += """'{name}':{name}.{value},""".format(name=w_params["arg_name"], value=w_params["value_field"])
                 _args[w_params["arg_name"]] = w_params["obj"]
         _parms += "}"
-        # print(_parms)
+        self.logger.debug(_parms)
 
         _code = """
                 var params = {}
-                var url = '/?' + encodeQueryData(params)
+                var url = '{}' + '?' + encodeQueryData(params)
                 window.location.replace(url);
-            """.format(_parms)
-        # print(_code)
+            """.format(_parms, self.url)
+        self.logger.debug(_code)
         return CustomJS(args=_args, code=_code)
 
     def _start_end_datepicker_handler(self, args, start):
@@ -209,8 +221,12 @@ class WrapBokeh(object):
         :return: True on success, False otherwise
         """
 
-        if start["name"] in self.widgets: return False
-        if end["name"] in self.widgets: return False
+        if start["name"] in self.widgets:
+            self.logger.error("{} already defined".format(start["name"]))
+            return False
+        if end["name"] in self.widgets:
+            self.logger.error("{} already defined".format(end["name"]))
+            return False
 
         s_min_date = start.get("min_date", None)
         s_max_date = start.get("max_date", None)
@@ -250,11 +266,14 @@ class WrapBokeh(object):
         }
         self._start_end_datepicker_handler({}, self.widgets[start["name"]])
         self._set_all_callbacks()
+        self.logger.info("added {}, {}".format(start["name"], end["name"]))
         return True
 
     def add_datepicker(self, name, title="Title", value=datetime.today(), min_date=None, max_date=None, width=None):
 
-        if name in self.widgets: return False
+        if name in self.widgets:
+            self.logger.error("{} already defined".format(name))
+            return False
 
         self.widgets[name] = {
             'obj': None,
@@ -284,7 +303,9 @@ class WrapBokeh(object):
         :return: True on success, False otherwise
         """
 
-        if name in self.widgets: return False
+        if name in self.widgets:
+            self.logger.error("{} already defined".format(name))
+            return False
 
         self.widgets[name] = {
             'obj': None,
@@ -311,7 +332,9 @@ class WrapBokeh(object):
         :return: True on success, False otherwise
         """
 
-        if name in self.widgets: return False
+        if name in self.widgets:
+            self.logger.error("{} already defined".format(name))
+            return False
 
         self.widgets[name] = {
             'obj': None,
@@ -337,7 +360,9 @@ class WrapBokeh(object):
         :return: True on success, False otherwise
         """
 
-        if name in self.widgets: return False
+        if name in self.widgets:
+            self.logger.error("{} already defined".format(name))
+            return False
 
         self.widgets[name] = {
             'obj': None,

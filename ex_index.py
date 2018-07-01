@@ -5,33 +5,28 @@
 Example using WrapBokeh
 
 """
-
 from datetime import datetime, timedelta
 from bokeh.layouts import column, row, layout, Spacer
 from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d
 
-from flask import Flask, redirect, abort
+from flask import redirect, abort, Blueprint
 from flask import request
+from flask import current_app as app
 
 from numpy import pi, arange, sin, linspace
 
 from pywrapbokeh import WrapBokeh
-from ex_a import ex_a
 
-from ex_utils import _redirect_lookup_table
+from ex_utils import redirect_lookup_table
 
-app = Flask(__name__)
-app.register_blueprint(ex_a)
+PAGE_URL = '/'
 
-
-widgets = None
-
-
-@app.route("/", methods=['GET'])
+ex_index = Blueprint('ex_index', __name__)
+@ex_index.route(PAGE_URL, methods=['GET'])
 def test_main():
     args = request.args.to_dict()
-    print(args)
+    app.logger.info(args)
 
     # reset page to initial values, if there are no parms
     if not args: reset_widgets()
@@ -39,7 +34,7 @@ def test_main():
     widgets.process_url(args)
 
     # redirect to another page based on widget data...
-    _redirect = _redirect_lookup_table(widgets.get_value("sel_goto_page"))
+    _redirect = redirect_lookup_table(widgets.get_value("sel_goto_page"))
     if _redirect: return redirect(_redirect)
 
     # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
@@ -101,7 +96,6 @@ def reset_widgets():
     widgets.set_value("slider_amp", 1.0)
 
 
-widgets = WrapBokeh()
+widgets = WrapBokeh(PAGE_URL, app.logger)
 init_widgets()
 
-app.run(host="0.0.0.0", port=6800)

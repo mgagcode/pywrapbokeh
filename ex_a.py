@@ -6,30 +6,30 @@ Example using WrapBokeh
 
 """
 from flask import Blueprint, request, redirect
+from flask import current_app as app
 from bokeh.layouts import column, row, layout, Spacer
 from pywrapbokeh import WrapBokeh
 
-from ex_utils import _redirect_lookup_table
+from ex_utils import redirect_lookup_table
 
-
-widgets = None
-
+PAGE_URL = '/a/'
 
 ex_a = Blueprint('ex_a', __name__)
-@ex_a.route('/a/', methods=['GET'])
+@ex_a.route(PAGE_URL, methods=['GET'])
 def page_a():
     args = request.args.to_dict()
-    print(args)
+    app.logger.info(args)
 
     widgets.process_url(args)
 
     # redirect to another page based on widget data...
-    _redirect = _redirect_lookup_table(widgets.get_value("sel_goto_page"))
+    _redirect = redirect_lookup_table(widgets.get_value("sel_goto_page"))
     if _redirect: return redirect(_redirect)
 
     # consider this first graph example, https://bokeh.pydata.org/en/latest/docs/user_guide/interaction/callbacks.html
 
     doc_layout = layout(sizing_mode='scale_width')
+    doc_layout.children.append(row(widgets.get_dom("datep_birthday")))
     doc_layout.children.append(row(widgets.get_dom("sel_goto_page")))
 
     d = widgets.dominate_document()
@@ -46,6 +46,8 @@ def init_widgets():
                               size=2,
                               width=30): return False
 
+    if not widgets.add_datepicker(name="datep_birthday", title='Birthday'): return False
+
     return True
 
 
@@ -55,5 +57,5 @@ def reset_widgets():
     pass
 
 
-widgets = WrapBokeh()
+widgets = WrapBokeh(PAGE_URL, app.logger)
 init_widgets()
