@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from bokeh.embed import components
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button
+from bokeh.models.widgets import CheckboxButtonGroup
 from bokeh.models import Slider
 from bokeh.models.callbacks import CustomJS
 
@@ -293,7 +294,7 @@ class WrapBokeh(object):
         if isinstance(_value, str):
             slider["value"] = float(_value) if "." in _value else int(_value)
         slider["obj"] = Slider(title=slider["title"], value=slider["value"], start=slider["start"], end=slider["end"],
-                               step=slider["step"], callback_policy='mouseup')
+                               step=slider["step"], callback_policy='mouseup', width=slider["width"])
 
     def add_slider(self, name, title, value, start=0, end=10, step=1, width=None):
         """ Create a slider
@@ -434,6 +435,36 @@ class WrapBokeh(object):
             "handler": self._button_handler
         }
         self._button_handler({}, self.widgets[name])
+        self._set_all_callbacks()
+        return True
+
+    def _checkboxbuttongroup_handler(self, args, cbbg):
+        active = [int(x) if x else None for x in args.get(cbbg["arg_name"], '').split(",")]
+        cbbg["value"] = active
+        cbbg["obj"] = CheckboxButtonGroup(labels=cbbg["labels"], active=active, width=cbbg["width"])
+
+    def add_checkboxbuttongroup(self, name, labels=["label"], active=[], width=None):
+
+        if name in self.widgets:
+            self.logger.error("{} already defined".format(name))
+            return False
+
+        if not isinstance(labels, list):
+            self.logger.error("arg label must be a list of strings")
+            return False
+
+        self.widgets[name] = {
+            'obj': None,
+            'name': name,
+            'value_field': 'active',
+            'value': active,
+            'arg_name': '{}'.format(name),
+            'labels': labels,
+            'width': width,
+            "has_bokeh_callback": True,
+            "handler": self._checkboxbuttongroup_handler
+        }
+        self._checkboxbuttongroup_handler({}, self.widgets[name])
         self._set_all_callbacks()
         return True
 
