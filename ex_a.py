@@ -17,14 +17,11 @@ PAGE_URL = '/a/'
 ex_a = Blueprint('ex_a', __name__)
 @ex_a.route(PAGE_URL, methods=['GET', 'POST'])
 def page_a():
-    if request.method == "POST": args = request.form.to_dict()
-    else: args = {}
-    app.logger.info(args)
 
-    widgets.process_url(args)
+    args = widgets.process_req(request)
 
     # redirect to another page based on widget data...
-    _redirect = redirect_lookup_table(widgets.get_value("sel_goto_page"))
+    _redirect = redirect_lookup_table(args.get("sel_goto_page", None))
     if _redirect: return redirect(_redirect)
 
     # consider this first graph example, https://bokeh.pydata.org/en/latest/docs/user_guide/interaction/callbacks.html
@@ -61,4 +58,3 @@ def reset_widgets():
 widgets = WrapBokeh(PAGE_URL, app.logger)
 if not init_widgets():
     app.logger.error("Failed to init widgets")
-    

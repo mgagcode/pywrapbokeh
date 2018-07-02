@@ -74,13 +74,10 @@ class WrapBokeh(object):
         self.logger.debug(d)
         return d
 
-    def _all_callback(self):
-        """ a bokeh CustomJS that will be called when a widget is changed, that puts the
-        value of the widget in the URL, for ALL widgets.
-        :return: CustomJS
+    def _set_all_callbacks(self):
+        """ attach a bokeh CustomJS that will be called when a widget is changed, that puts the
+        value of the widget in the URL, for ALL widget callbacks.
         """
-        # TODO: this _parms loop should be done once by the caller, _set_all_callbacks
-        #       in fact get rid of this and make it part of _set_all_callbacks()
         _parms = "{"
         _args = {}
         for w_name, w_params in self.widgets.items():
@@ -95,7 +92,10 @@ class WrapBokeh(object):
                postAndRedirect('{}', params);
         """.format(_parms, self.url)
         self.logger.debug(_code)
-        return CustomJS(args=_args, code=_code)
+
+        for key in self.widgets:
+            if self.widgets[key]["obj"] is not None:
+                self.widgets[key]["obj"].callback = CustomJS(args=_args, code=_code)
 
     def _start_end_datepicker_handler(self, args, start):
         """ Handler for a start/end DatePicker pair of widgets
@@ -217,12 +217,6 @@ class WrapBokeh(object):
         selected = args.get(s["arg_name"], "")
         s["value"] = selected
         s["obj"] = Select(options=s["options"], value=selected, title=s["title"])
-
-
-    def _set_all_callbacks(self):
-        for key in self.widgets:
-            if self.widgets[key]["obj"] is not None:
-                self.widgets[key]["obj"].callback = self._all_callback()
 
     def add_datepicker_pair(self, start, end):
         """ Create a datepicker pair, like start and end
@@ -395,16 +389,22 @@ class WrapBokeh(object):
         self._set_all_callbacks()
         return True
 
-    def process_url(self, args):
+    def process_req(self, req):
         """ Updates the state of every widget based on the values of each widget in args
         - sets the callback for each widget
         :param args: dict of every widget value by name
         """
+        if req.method == "POST": args = req.form.to_dict()
+        else: args = {}
+        self.logger.info(args)
+
         for key, widget in self.widgets.items():
             if widget["obj"] is not None and widget["handler"] is not None:
                 widget["handler"](args, widget)
 
         self._set_all_callbacks()
+
+        return args
 
     def get_dom(self, name):
         return self.widgets[name]["obj"]

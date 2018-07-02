@@ -26,14 +26,10 @@ ex_index = Blueprint('ex_index', __name__)
 @ex_index.route(PAGE_URL, methods=['GET', 'POST'])
 def test_main():
 
-    if request.method == "POST": args = request.form.to_dict()
-    else: args = {}
-    app.logger.info(args)
+    args = widgets.process_req(request)
 
     # reset page to initial values, if there are no parms
     if not args: reset_widgets()
-
-    widgets.process_url(args)
 
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(widgets.get_value("sel_goto_page"))
