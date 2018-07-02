@@ -28,6 +28,7 @@ def page_a():
 
     doc_layout = layout(sizing_mode='scale_width')
     doc_layout.children.append(row(widgets.get_dom("datep_birthday")))
+    doc_layout.children.append(row(widgets.get_dom("but_one")))
     doc_layout.children.append(row(widgets.get_dom("sel_goto_page")))
 
     d = widgets.dominate_document()
@@ -39,12 +40,14 @@ def init_widgets():
     """ init widgets
     :return: True on success, False otherwise
     """
+    if not widgets.add_datepicker(name="datep_birthday", title='Birthday'): return False
+
+    if not widgets.add_button(name="but_one", label="One"): return False
+
     if not widgets.add_select(name="sel_goto_page",
                               options=[('_', 'Select Next Page'), ('b', 'Page b'), ('c', 'Page c'), ('d', 'Home')],
                               size=2,
                               width=30): return False
-
-    if not widgets.add_datepicker(name="datep_birthday", title='Birthday'): return False
 
     return True
 
