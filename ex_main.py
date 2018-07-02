@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 with app.app_context():
     from ex_utils import setup_logging
-    setup_logging(log_file_name_prefix=__file__, addConsole=True)
+    setup_logging(log_file_name_prefix=__file__, addConsole=False)
 
     # pages
     from ex_index import ex_index
