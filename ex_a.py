@@ -7,7 +7,7 @@ Example using WrapBokeh
 """
 from flask import Blueprint, request, redirect
 from flask import current_app as app
-from bokeh.layouts import column, row, layout, Spacer
+from bokeh.layouts import column, row, layout, Spacer, widgetbox
 from pywrapbokeh import WrapBokeh
 
 from ex_utils import redirect_lookup_table
@@ -24,12 +24,20 @@ def page_a():
     _redirect = redirect_lookup_table(args.get("sel_goto_page", None))
     if _redirect: return redirect(_redirect)
 
+    # if the clear buttons button is slected, clear the group buttons
+    if args.get("but_clear_groups", False):
+        widgets.set_value("cbbg_family", None)
+        widgets.set_value("rbg_names", None)
+
     # consider this first graph example, https://bokeh.pydata.org/en/latest/docs/user_guide/interaction/callbacks.html
 
     doc_layout = layout(sizing_mode='scale_width')
     doc_layout.children.append(row(widgets.get_dom("datep_birthday")))
     doc_layout.children.append(row(widgets.get_dom("but_one")))
-    doc_layout.children.append(row(widgets.get_dom("cbbg_family")))
+
+    widget_box = widgetbox(widgets.get_dom("but_clear_groups"), widgets.get_dom("cbbg_family"), widgets.get_dom("rbg_names"))
+
+    doc_layout.children.append(row(widget_box))
     doc_layout.children.append(row(widgets.get_dom("sel_goto_page")))
 
     d = widgets.dominate_document()
@@ -47,8 +55,15 @@ def init_widgets():
     if not widgets.add_button(name="but_one", label="One"):
         return False
 
+    if not widgets.add_button(name="but_clear_groups", label="Clear Buttons"):
+        return False
+
     if not widgets.add_checkboxbuttongroup(name="cbbg_family",
-                                           labels=["father", "mother", "brother"], width=500):
+                                           labels=["father", "mother", "brother"], width=200):
+        return False
+
+    if not widgets.add_radiobuttongroup(name="rbg_names",
+                                           labels=["Albert", "Sally", "Bill"], width=200):
         return False
 
     if not widgets.add_select(name="sel_goto_page",
