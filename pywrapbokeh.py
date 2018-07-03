@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from bokeh.embed import components
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button
-from bokeh.models.widgets import CheckboxButtonGroup
+from bokeh.models.widgets import CheckboxButtonGroup, RadioButtonGroup
 from bokeh.models import Slider
 from bokeh.models.callbacks import CustomJS
 
@@ -468,6 +468,34 @@ class WrapBokeh(object):
         self._set_all_callbacks()
         return True
 
+    def _radiobuttongroup_handler(self, args, rbg):
+        active = args.get(rbg["arg_name"], None)
+        if active == 'null': active = None
+        if active is not None: active = int(active)
+        rbg["value"] = active
+        rbg["obj"] = RadioButtonGroup(labels=rbg["labels"], active=active, width=rbg["width"])
+
+    def add_radiobuttongroup(self, name, labels=["label"], active=None, width=None):
+
+        if name in self.widgets:
+            self.logger.error("{} already defined".format(name))
+            return False
+
+        self.widgets[name] = {
+            'obj': None,
+            'name': name,
+            'value_field': 'active',
+            'value': active,
+            'arg_name': '{}'.format(name),
+            'labels': labels,
+            'width': width,
+            "has_bokeh_callback": True,
+            "handler": self._radiobuttongroup_handler
+        }
+        self._radiobuttongroup_handler({}, self.widgets[name])
+        self._set_all_callbacks()
+        return True
+
     def process_req(self, req):
         """ Updates the state of every widget based on the values of each widget in args
         - sets the callback for each widget
@@ -493,6 +521,7 @@ class WrapBokeh(object):
 
     def set_value(self, name, value):
         self.widgets[name]["value"] = value
+        self.widgets[name]["handler"]({}, self.widgets[name])
 
     def get_value_all(self):
         result = {}
