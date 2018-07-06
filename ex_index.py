@@ -32,7 +32,8 @@ def test_main():
 
     # reset page to initial values, if there are no parms
     if not args:
-        widgets.get("s_age").value = 1
+        widgets.get("s_age").value = 25
+        widgets.get("s_amp").value = 1
 
     # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
     amplitude = float(args.get("s_amp", 1.0))
