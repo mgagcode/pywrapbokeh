@@ -140,31 +140,6 @@ class WrapBokeh(object):
         multisel.value = selected
         return args
 
-    def process_req(self, req):
-        """ Updates the state of every widget based on the values of each widget in args
-        - sets the callback for each widget
-        :param args: dict of every widget value by name
-        """
-        if req.method == "POST": args = req.form.to_dict()
-        else: args = {}
-        self.logger.debug(args)
-
-        for w_name, w_value in args.items():
-            if w_name == 'callerWidget': continue
-            obj = self.widgets[w_name]['obj']
-
-            if isinstance(obj, (Slider, )):
-                args = self._set_slider(obj, w_name, w_value, args)
-            elif isinstance(obj, (DatePicker, )):
-                args = self._set_datep(obj, w_name, w_value, args)
-            elif isinstance(obj, (MultiSelect, )):
-                args = self._set_multisel(obj, w_name, w_value, args)
-            else:
-                self.logger.error("1Unsupported widget class of name {}".format(w_name))
-
-        self.logger.info(args)
-        return args
-
     def add(self, name, widget):
 
         if isinstance(widget, (Slider, )):
@@ -187,6 +162,26 @@ class WrapBokeh(object):
             'setter': setter,
         }
         return True
+
+    def process_req(self, req):
+        """ Updates the state of every widget based on the values of each widget in args
+        - sets the callback for each widget
+        :param args: dict of every widget value by name
+        """
+        if req.method == "POST":
+            args = req.form.to_dict()
+        else:
+            args = {}
+        self.logger.debug(args)
+
+        for w_name, w_value in args.items():
+            if w_name == 'callerWidget': continue
+
+            w = self.widgets[w_name]
+            args = w["setter"](w["obj"], w_name, w_value, args)
+
+        self.logger.info(args)
+        return args
 
     def init(self):
         self._set_all_callbacks()
