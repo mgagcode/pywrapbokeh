@@ -34,9 +34,21 @@ def test_main():
     if not args:
         widgets.get("s_age").value = 1
 
+    # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
+    amplitude = float(args.get("s_amp", 1.0))
+    x = arange(-2 * pi, 2 * pi, 0.1)
+    y = amplitude * sin(x)
+    y2 = linspace(0, 100, len(y))
+    p = figure(x_range=(-6.5, 6.5), y_range=(-2.0, 2.0), width=600, height=200)
+    p.circle(x, y, color="red")
+    p.extra_y_ranges = {"foo": Range1d(start=0, end=100)}
+    p.circle(x, y2, color="blue", y_range_name="foo")
+    p.add_layout(LinearAxis(y_range_name="foo"), 'left')
+
     doc_layout = layout(sizing_mode='scale_width')
     doc_layout.children.append(row(widgets.get("s_age")))
     doc_layout.children.append(row(widgets.get("dp_birthday"), row(widgets.get("msel_fruit"))))
+    doc_layout.children.append(column(widgets.get("s_amp"), p))
 
     # Create a dominate document, see https://github.com/Knio/dominate
     d = widgets.dominate_document()
@@ -59,9 +71,17 @@ widgets.add("dp_birthday", DatePicker(title="Birthday",
                                       value=datetime.today(),
                                       width=300))
 
-widgets.add("msel_fruit", MultiSelect(options=[('a', 'Apples'), ('b', 'Strawberries'), ('c', 'Oranges'), ('d', 'Grapefruit')],
+widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'), ('1', 'Strawberries'), ('2', 'Oranges'), ('3', 'Grapefruit')],
                                       value=None,
                                       title="Fruit"))
+
+widgets.add("s_amp", Slider(title='Amplitude',
+                            value=1,
+                            start=0,
+                            end=2,
+                            step=0.1,
+                            callback_policy='mouseup',
+                            width=200))
 
 widgets.init()
 

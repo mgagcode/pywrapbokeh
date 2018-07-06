@@ -112,7 +112,11 @@ class WrapBokeh(object):
         :param name:
         :param value:
         """
-        slider.value = int(value)
+        if value == 'NaN':
+            _value = slider.value
+        if isinstance(value, str):
+            _value = float(value) if "." in value else int(value)
+        slider.value = _value
         return args
 
     def _set_datep(self, datep, name, value, args):
