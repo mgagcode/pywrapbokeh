@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+from datetime import datetime, timedelta
 from bokeh.embed import components
 from bokeh.models.callbacks import CustomJS
 from bokeh.models import Slider
+from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 
 from dominate.tags import *
 import dominate
@@ -106,19 +107,34 @@ class WrapBokeh(object):
                 __code = _code.replace("callerWidget", key)
                 self.widgets[key]["obj"].callback = CustomJS(args=_args, code=__code)
 
-    def add(self, name, widget):
+    def _set_slider(self, slider, name, value, args):
+        """ Slider, value is a string of an integer, set int
+        :param name:
+        :param value:
+        """
+        slider.value = int(value)
+        return args
 
-        if isinstance(widget, (Slider, )):
-            value_field = 'value'
+    def _set_datep(self, datep, name, value, args):
+        # the datepicker will return an epoch if it wasn't the callback trigger
+        # and it returns a 'Mon Jun 18 2018' format if it was the trigger, handle both...
+        # And note there is a one day off bug that is also handled.
+        if value.split(".")[0].isdigit():  # epoch
+            date = datetime.fromtimestamp(int(value.split(".")[0]) / 1000)
+            # TODO: set hours and minutes to 0:0
+            datep.value = date
+            args[name] = date
+        else:  # string date 'Mon Jun 18 2018'
+            date = datetime.strptime(value, "%a %b %d %Y")
+            args[name] = date
+            date += timedelta(days=1)  # this fixes a bug where the date picked is one day behind the user selection
+            datep.value = date
+        return args
 
-        self.widgets[name] = {
-            'obj': widget,
-            'value': widget.value,
-            'value_field': value_field,
-        }
-
-    def init(self):
-        self._set_all_callbacks()
+    def _set_multisel(self, multisel, name, value, args):
+        selected = value.split(",")
+        multisel.value = selected
+        return args
 
     def process_req(self, req):
         """ Updates the state of every widget based on the values of each widget in args
@@ -127,32 +143,58 @@ class WrapBokeh(object):
         """
         if req.method == "POST": args = req.form.to_dict()
         else: args = {}
-        self.logger.info(args)
+        self.logger.debug(args)
 
         for w_name, w_value in args.items():
             if w_name == 'callerWidget': continue
-            if isinstance(self.widgets[w_name], (Slider,)):
-                self.set_value(w_name, int(w_value))
-            else:
-                self.logger.error("Unsupported widget class of name {}".format(w_name))
+            obj = self.widgets[w_name]['obj']
 
+            if isinstance(obj, (Slider, )):
+                args = self._set_slider(obj, w_name, w_value, args)
+            elif isinstance(obj, (DatePicker, )):
+                args = self._set_datep(obj, w_name, w_value, args)
+            elif isinstance(obj, (MultiSelect, )):
+                args = self._set_multisel(obj, w_name, w_value, args)
+            else:
+                self.logger.error("1Unsupported widget class of name {}".format(w_name))
+
+        self.logger.info(args)
         return args
+
+    def add(self, name, widget):
+
+        if isinstance(widget, (Slider, )):
+            value_field = 'value'
+            setter = self._set_slider
+        elif isinstance(widget, (DatePicker, )):
+            value_field = 'value'
+            setter = self._set_datep
+        elif isinstance(widget, (MultiSelect, )):
+            value_field = 'value'
+            setter = self._set_multisel
+        else:
+            self.logger.error("4Unsupported widget class of name {}".format(name))
+            return False
+
+        self.widgets[name] = {
+            'obj': widget,
+            'value': widget.value,
+            'value_field': value_field,
+            'setter': setter,
+        }
+        return True
+
+    def init(self):
+        self._set_all_callbacks()
 
     def get(self, name):
         return self.widgets[name]["obj"]
 
     def get_value(self, name):
-        if isinstance(self.widgets[name], (Slider,)):
+        if isinstance(self.widgets[name], (Slider, DatePicker, MultiSelect, )):
             return self.widgets[name]["obj"].value
         else:
-            self.logger.error("Unsupported widget class of name {}".format(name))
-
-    def set_value(self, name, value):
-        if isinstance(self.widgets[name], (Slider,)):
-            if isinstance(value, str): value = int(value)
-            self.widgets[name]["obj"].value = value
-        else:
-            self.logger.error("Unsupported widget class of name {}".format(name))
+            self.logger.error("2Unsupported widget class of name {}".format(name))
 
     def render(self, d, layout):
         """ render the layout in the current dominate document
