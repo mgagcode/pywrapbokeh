@@ -11,7 +11,7 @@ from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d
 from bokeh.models import Slider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
-from bokeh.models.widgets.buttons import Button
+from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
 from bokeh.models.widgets import Paragraph
 
 from flask import redirect, abort, Blueprint
@@ -57,7 +57,7 @@ def test_main():
     doc_layout.children.append(column(widgets.get("s_age"), p_text_age))
     doc_layout.children.append(row(widgets.get("dp_birthday"), row(widgets.get("msel_fruit"))))
     doc_layout.children.append(column(widgets.get("s_amp"), p))
-    doc_layout.children.append(row(widgets.get("b_test")))
+    doc_layout.children.append(row(widgets.get("b_test"), widgets.get("toggle_1"), widgets.get("dropdn_1")))
 
     # Create a dominate document, see https://github.com/Knio/dominate
     d = widgets.dominate_document()
@@ -85,7 +85,7 @@ widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'),
                                                ('2', 'Oranges'),
                                                ('3', 'Grapefruit'),
                                                ('4', 'Banannas')],
-                                      value=None,
+                                      value=[],
                                       title="Fruit"))
 
 widgets.add("s_amp", Slider(title='Amplitude',
@@ -97,6 +97,11 @@ widgets.add("s_amp", Slider(title='Amplitude',
                             width=200))
 
 widgets.add("b_test", Button(label="Press me!"))
+widgets.add("toggle_1", Toggle(label="Toggle me!"))
+widgets.add("dropdn_1", Dropdown(label="Menu", menu=[("First",  '0'),
+                                                     ("Second", '1'),
+                                                     None,
+                                                     ("End",    '2')]))
 
 widgets.init()
 
