@@ -231,9 +231,9 @@ class WrapBokeh(object):
         else: args = {}
         self.logger.info("--> {}".format(args))
 
-        for w_name, w_value in args.items():
-            if w_name == 'callerWidget': continue
-
+        w_name = args.get('callerWidget', None)
+        if w_name:
+            w_value = args.get(w_name, None)
             w = self.widgets[w_name]
             args = w["setter"](w["obj"], w_name, w_value, args)
 
