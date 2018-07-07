@@ -11,6 +11,8 @@ from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d
 from bokeh.models import Slider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
+from bokeh.models.widgets.buttons import Button
+from bokeh.models.widgets import Paragraph
 
 from flask import redirect, abort, Blueprint
 from flask import request
@@ -34,6 +36,11 @@ def test_main():
     if not args:
         widgets.get("s_age").value = 25
         widgets.get("s_amp").value = 1
+        text_age = "Please tell me how old you are..."
+    else:
+        text_age = "Wow, you are {} years old!".format(widgets.get("s_age").value)
+
+    p_text_age = Paragraph(text=text_age, width=None, height=None)
 
     # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
     amplitude = float(args.get("s_amp", 1.0))
@@ -47,9 +54,10 @@ def test_main():
     p.add_layout(LinearAxis(y_range_name="foo"), 'left')
 
     doc_layout = layout(sizing_mode='scale_width')
-    doc_layout.children.append(row(widgets.get("s_age")))
+    doc_layout.children.append(column(widgets.get("s_age"), p_text_age))
     doc_layout.children.append(row(widgets.get("dp_birthday"), row(widgets.get("msel_fruit"))))
     doc_layout.children.append(column(widgets.get("s_amp"), p))
+    doc_layout.children.append(row(widgets.get("b_test")))
 
     # Create a dominate document, see https://github.com/Knio/dominate
     d = widgets.dominate_document()
@@ -72,7 +80,11 @@ widgets.add("dp_birthday", DatePicker(title="Birthday",
                                       value=datetime.today(),
                                       width=300))
 
-widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'), ('1', 'Strawberries'), ('2', 'Oranges'), ('3', 'Grapefruit')],
+widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'),
+                                               ('1', 'Strawberries'),
+                                               ('2', 'Oranges'),
+                                               ('3', 'Grapefruit'),
+                                               ('4', 'Banannas')],
                                       value=None,
                                       title="Fruit"))
 
@@ -83,6 +95,8 @@ widgets.add("s_amp", Slider(title='Amplitude',
                             step=0.1,
                             callback_policy='mouseup',
                             width=200))
+
+widgets.add("b_test", Button(label="Press me!"))
 
 widgets.init()
 

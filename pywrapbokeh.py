@@ -5,6 +5,7 @@ from bokeh.embed import components
 from bokeh.models.callbacks import CustomJS
 from bokeh.models import Slider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
+from bokeh.models.widgets.buttons import Button
 
 from dominate.tags import *
 import dominate
@@ -140,24 +141,50 @@ class WrapBokeh(object):
         multisel.value = selected
         return args
 
+    def _set_button(self, b, name, value, args):
+        """ Button handler
+        - Button doesn't have an value attribute, but we create one.
+        - args["button_name"] is set to True if the user pressed the button
+        :param b:
+        :param name:
+        :param value:
+        :param args:
+        :return: args
+        """
+        value = False
+        if args.get('callerWidget', False):
+            if args['callerWidget'] == name:
+                value = True
+
+        self.widgets[name]["value"] = value
+        args[name] = value
+        return args
+
     def add(self, name, widget):
 
         if isinstance(widget, (Slider, )):
             value_field = 'value'
             setter = self._set_slider
+            value = widget.value
         elif isinstance(widget, (DatePicker, )):
             value_field = 'value'
             setter = self._set_datep
+            value = widget.value
         elif isinstance(widget, (MultiSelect, )):
             value_field = 'value'
             setter = self._set_multisel
+            value = widget.value
+        elif isinstance(widget, (Button, )):
+            value_field = None
+            setter = self._set_button
+            value = None
         else:
             self.logger.error("4Unsupported widget class of name {}".format(name))
             return False
 
         self.widgets[name] = {
             'obj': widget,
-            'value': widget.value,
+            'value': value,
             'value_field': value_field,
             'setter': setter,
         }
