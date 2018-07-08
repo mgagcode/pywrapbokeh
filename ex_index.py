@@ -10,6 +10,7 @@ from bokeh.layouts import column, row, layout, Spacer
 from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d
 from bokeh.models import Slider, RangeSlider
+from bokeh.models.widgets.sliders import DateSlider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
 from bokeh.models.widgets import Paragraph, Div
@@ -59,7 +60,7 @@ def test_main():
     doc_layout.children.append(row(Div(text="""<h1>pywrapBokeh</h1>"""),
                                row(Paragraph(text="""Play with all these widgets."""))))
     doc_layout.children.append(column(widgets.get("s_age"), p_text_age))
-    doc_layout.children.append(row(widgets.get("dp_birthday"), row(widgets.get("msel_fruit"))))
+    doc_layout.children.append(row(widgets.get("dp_birthday"), widgets.get("msel_fruit"), widgets.get("ds_birthday")))
     doc_layout.children.append(column(widgets.get("s_amp"), p))
     doc_layout.children.append(row(widgets.get("b_test"), widgets.get("toggle_1"), widgets.get("dropdn_1")))
     doc_layout.children.append(row(widgets.get("sel_relations"), widgets.get("cbbg_music"), widgets.get("cbg_music")))
@@ -93,6 +94,13 @@ widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'),
                                                ('4', 'Banannas')],
                                       value=[],
                                       title="Fruit"))
+
+widgets.add("ds_birthday", DateSlider(title="Birthday",
+                                      end=datetime.today(),
+                                      start=datetime.today() - timedelta(days=30),
+                                      step=1,
+                                      value=datetime.today(),
+                                      callback_policy='mouseup'))
 
 widgets.add("s_amp", Slider(title='Amplitude',
                             value=1,

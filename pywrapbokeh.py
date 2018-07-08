@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from bokeh.embed import components
 from bokeh.models.callbacks import CustomJS
 from bokeh.models import Slider, RangeSlider
+from bokeh.models.widgets.sliders import DateSlider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
 from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioButtonGroup, RadioGroup
@@ -154,6 +155,20 @@ class WrapBokeh(object):
         self.widgets[name]["value"] = date
         return args
 
+    def _set_dateslider(self, dateslider, name, value, args):
+        if value.split(".")[0].isdigit():  # epoch
+            date = datetime.fromtimestamp(int(value.split(".")[0]) / 1000)
+            # TODO: set hours and minutes to 0:0
+            args[name] = date
+        else:  # string date 'Mon Jun 18 2018'
+            date = datetime.strptime(value, "%a %b %d %Y")
+            args[name] = date
+            date += timedelta(days=1)  # this fixes a bug where the date picked is one day behind the user selection
+
+        dateslider.value = date
+        self.widgets[name]["value"] = date
+        return args
+
     def _set_multisel(self, multisel, name, value, args):
         cache = multisel.value
 
@@ -238,6 +253,10 @@ class WrapBokeh(object):
         elif isinstance(widget, (DatePicker, )):
             value_field = 'value'
             setter = self._set_datep
+            value = widget.value
+        elif isinstance(widget, (DateSlider, )):
+            value_field = 'value'
+            setter = self._set_dateslider
             value = widget.value
         elif isinstance(widget, (MultiSelect, )):
             value_field = 'value'
