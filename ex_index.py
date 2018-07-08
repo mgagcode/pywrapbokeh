@@ -58,6 +58,7 @@ def test_main():
     doc_layout.children.append(row(widgets.get("dp_birthday"), row(widgets.get("msel_fruit"))))
     doc_layout.children.append(column(widgets.get("s_amp"), p))
     doc_layout.children.append(row(widgets.get("b_test"), widgets.get("toggle_1"), widgets.get("dropdn_1")))
+    doc_layout.children.append(row(widgets.get("sel_relations")))
 
     # Create a dominate document, see https://github.com/Knio/dominate
     d = widgets.dominate_document()
@@ -102,6 +103,14 @@ widgets.add("dropdn_1", Dropdown(label="Menu", menu=[("First",  '0'),
                                                      ("Second", '1'),
                                                      None,
                                                      ("End",    '2')]))
+
+widgets.add("sel_relations", Select(options=[('0', 'Father'),
+                                          ('1', 'Mother'),
+                                          ('2', 'Baby'),
+                                          ('3', 'Sister'),
+                                          ('4', 'brother')],
+                                 value=None,
+                                 title="Relations"))
 
 widgets.init()
 

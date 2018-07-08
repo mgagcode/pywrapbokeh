@@ -184,6 +184,11 @@ class WrapBokeh(object):
         self.widgets[name]["value"] = value
         return args
 
+    def _set_select(self, sel, name, value, args):
+        self.widgets[name]["value"] = value
+        sel.value = value
+        return args
+
     def add(self, name, widget):
 
         if isinstance(widget, (Slider, )):
@@ -209,6 +214,10 @@ class WrapBokeh(object):
         elif isinstance(widget, (Dropdown, )):
             value_field = 'value'
             setter = self._set_dropdown
+            value = widget.value
+        elif isinstance(widget, (Select, )):
+            value_field = 'value'
+            setter = self._set_select
             value = widget.value
         else:
             self.logger.error("4Unsupported widget class of name {}".format(name))
@@ -247,9 +256,10 @@ class WrapBokeh(object):
         return self.widgets[name]["obj"]
 
     def get_value(self, name):
-        if isinstance(self.widgets[name], (Slider, DatePicker, MultiSelect, Dropdown, )):
+        if isinstance(self.widgets[name], (Slider, DatePicker, MultiSelect, Dropdown, Select, )):
             return self.widgets[name]["obj"].value
         elif isinstance(self.widgets[name], (Button, )):
+            # use cached value
             return self.widgets[name]["value"]
         elif isinstance(self.widgets[name], (Toggle, )):
             return self.widgets[name]["obj"].active
