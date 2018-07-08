@@ -6,6 +6,8 @@ from bokeh.models.callbacks import CustomJS
 from bokeh.models import Slider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
+from bokeh.models.widgets import CheckboxButtonGroup, RadioButtonGroup
+
 
 from dominate.tags import *
 import dominate
@@ -189,7 +191,15 @@ class WrapBokeh(object):
         sel.value = value
         return args
 
+    def _set_cbbg(self, cbbg, name, value, args):
+        active = [int(x) if x else None for x in value.split(",")]
+        self.widgets[name]["value"] = active
+        cbbg.active = active
+        return args
+
     def add(self, name, widget):
+
+        # TODO: check for duplicate names...
 
         if isinstance(widget, (Slider, )):
             value_field = 'value'
@@ -219,6 +229,10 @@ class WrapBokeh(object):
             value_field = 'value'
             setter = self._set_select
             value = widget.value
+        elif isinstance(widget, (CheckboxButtonGroup, )):
+            value_field = 'active'
+            setter = self._set_cbbg
+            value = widget.active
         else:
             self.logger.error("4Unsupported widget class of name {}".format(name))
             return False
@@ -261,7 +275,7 @@ class WrapBokeh(object):
         elif isinstance(self.widgets[name], (Button, )):
             # use cached value
             return self.widgets[name]["value"]
-        elif isinstance(self.widgets[name], (Toggle, )):
+        elif isinstance(self.widgets[name], (Toggle, CheckboxButtonGroup, )):
             return self.widgets[name]["obj"].active
         else:
             self.logger.error("2Unsupported widget class of name {}".format(name))

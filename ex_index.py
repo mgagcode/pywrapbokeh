@@ -12,7 +12,9 @@ from bokeh.models import LinearAxis, Range1d
 from bokeh.models import Slider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
-from bokeh.models.widgets import Paragraph
+from bokeh.models.widgets import Paragraph, Div
+from bokeh.models.widgets import CheckboxButtonGroup, RadioButtonGroup
+
 
 from flask import redirect, abort, Blueprint
 from flask import request
@@ -54,11 +56,13 @@ def test_main():
     p.add_layout(LinearAxis(y_range_name="foo"), 'left')
 
     doc_layout = layout(sizing_mode='scale_width')
+    doc_layout.children.append(row(Div(text="""<h1>pywrapBokeh</h1>"""),
+                               row(Paragraph(text="""Play with all these widgets."""))))
     doc_layout.children.append(column(widgets.get("s_age"), p_text_age))
     doc_layout.children.append(row(widgets.get("dp_birthday"), row(widgets.get("msel_fruit"))))
     doc_layout.children.append(column(widgets.get("s_amp"), p))
     doc_layout.children.append(row(widgets.get("b_test"), widgets.get("toggle_1"), widgets.get("dropdn_1")))
-    doc_layout.children.append(row(widgets.get("sel_relations")))
+    doc_layout.children.append(row(widgets.get("sel_relations"), widgets.get("cbbg_music")))
 
     # Create a dominate document, see https://github.com/Knio/dominate
     d = widgets.dominate_document()
@@ -111,6 +115,8 @@ widgets.add("sel_relations", Select(options=[('0', 'Father'),
                                           ('4', 'brother')],
                                  value=None,
                                  title="Relations"))
+
+widgets.add("cbbg_music", CheckboxButtonGroup(labels=["Rock", "Country", "Classical"], active=[]))
 
 widgets.init()
 
