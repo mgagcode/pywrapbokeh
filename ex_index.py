@@ -58,7 +58,7 @@ def test_main():
 
     doc_layout = layout(sizing_mode='scale_width')
     doc_layout.children.append(row(Div(text="""<h1>pywrapBokeh</h1>"""),
-                               row(Paragraph(text="""Play with all these widgets."""))))
+                                   Paragraph(text="""Play with all these widgets.""")))
     doc_layout.children.append(column(widgets.get("s_age"), p_text_age))
     doc_layout.children.append(row(widgets.get("dp_birthday"), widgets.get("msel_fruit"), widgets.get("ds_birthday")))
     doc_layout.children.append(column(widgets.get("s_amp"), p))
@@ -122,8 +122,8 @@ widgets.add("sel_relations", Select(options=[('0', 'Father'),
                                           ('2', 'Baby'),
                                           ('3', 'Sister'),
                                           ('4', 'brother')],
-                                 value=None,
-                                 title="Relations"))
+                                    value=None,
+                                    title="Relations"))
 
 widgets.add("cbbg_music", CheckboxButtonGroup(labels=["Rock", "Country", "Classical"], active=[]))
 widgets.add("cbg_music", CheckboxGroup(labels=["Rock", "Country", "Classical"], active=[]))
