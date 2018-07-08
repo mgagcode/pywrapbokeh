@@ -3,10 +3,10 @@
 from datetime import datetime, timedelta
 from bokeh.embed import components
 from bokeh.models.callbacks import CustomJS
-from bokeh.models import Slider
+from bokeh.models import Slider, RangeSlider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
-from bokeh.models.widgets import CheckboxButtonGroup, RadioButtonGroup
+from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioButtonGroup, RadioGroup
 
 
 from dominate.tags import *
@@ -122,6 +122,21 @@ class WrapBokeh(object):
         slider.value = _value
         return args
 
+    def _set_rangeslider(self, slider, name, value, args):
+        """ Slider, value is a string of an integer, set int
+        :param name:
+        :param value:
+        """
+        _values = value.split(",")
+        for idx, value in enumerate(_values):
+            if value == 'NaN':
+                _value = slider.value
+            if isinstance(value, str):
+                _value = float(value) if "." in value else int(value)
+            _values[idx] = _value
+        slider.value = _values
+        return args
+
     def _set_datep(self, datep, name, value, args):
         # the datepicker will return an epoch if it wasn't the callback trigger
         # and it returns a 'Mon Jun 18 2018' format if it was the trigger, handle both...
@@ -197,6 +212,15 @@ class WrapBokeh(object):
         cbbg.active = active
         return args
 
+    def _set_rbg(self, rbg, name, value, args):
+        if value == 'NaN':
+            _value = rbg.value
+        if isinstance(value, str):
+            _value = float(value) if "." in value else int(value)
+        self.widgets[name]["value"] = _value
+        rbg.active = _value
+        return args
+
     def add(self, name, widget):
 
         # TODO: check for duplicate names...
@@ -205,6 +229,12 @@ class WrapBokeh(object):
             value_field = 'value'
             setter = self._set_slider
             value = widget.value
+            # TODO: ensure that widget.callback_policy = 'mouseup'
+        elif isinstance(widget, (RangeSlider, )):
+            value_field = 'value'
+            setter = self._set_rangeslider
+            value = widget.value
+            # TODO: ensure that widget.callback_policy = 'mouseup'
         elif isinstance(widget, (DatePicker, )):
             value_field = 'value'
             setter = self._set_datep
@@ -229,9 +259,13 @@ class WrapBokeh(object):
             value_field = 'value'
             setter = self._set_select
             value = widget.value
-        elif isinstance(widget, (CheckboxButtonGroup, )):
+        elif isinstance(widget, (CheckboxButtonGroup, CheckboxGroup, )):
             value_field = 'active'
             setter = self._set_cbbg
+            value = widget.active
+        elif isinstance(widget, (RadioButtonGroup, RadioGroup, )):
+            value_field = 'active'
+            setter = self._set_rbg
             value = widget.active
         else:
             self.logger.error("4Unsupported widget class of name {}".format(name))
@@ -270,12 +304,20 @@ class WrapBokeh(object):
         return self.widgets[name]["obj"]
 
     def get_value(self, name):
-        if isinstance(self.widgets[name], (Slider, DatePicker, MultiSelect, Dropdown, Select, )):
+        if isinstance(self.widgets[name], (Slider, RangeSlider,
+                                           DatePicker,
+                                           MultiSelect,
+                                           Dropdown,
+                                           Select, )):
             return self.widgets[name]["obj"].value
         elif isinstance(self.widgets[name], (Button, )):
             # use cached value
             return self.widgets[name]["value"]
-        elif isinstance(self.widgets[name], (Toggle, CheckboxButtonGroup, )):
+        elif isinstance(self.widgets[name], (Toggle,
+                                             CheckboxButtonGroup,
+                                             CheckboxGroup,
+                                             RadioButtonGroup,
+                                             RadioGroup, )):
             return self.widgets[name]["obj"].active
         else:
             self.logger.error("2Unsupported widget class of name {}".format(name))

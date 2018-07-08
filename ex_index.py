@@ -9,11 +9,11 @@ from datetime import datetime, timedelta
 from bokeh.layouts import column, row, layout, Spacer
 from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d
-from bokeh.models import Slider
+from bokeh.models import Slider, RangeSlider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
 from bokeh.models.widgets import Paragraph, Div
-from bokeh.models.widgets import CheckboxButtonGroup, RadioButtonGroup
+from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioGroup, RadioButtonGroup
 
 
 from flask import redirect, abort, Blueprint
@@ -62,7 +62,8 @@ def test_main():
     doc_layout.children.append(row(widgets.get("dp_birthday"), row(widgets.get("msel_fruit"))))
     doc_layout.children.append(column(widgets.get("s_amp"), p))
     doc_layout.children.append(row(widgets.get("b_test"), widgets.get("toggle_1"), widgets.get("dropdn_1")))
-    doc_layout.children.append(row(widgets.get("sel_relations"), widgets.get("cbbg_music")))
+    doc_layout.children.append(row(widgets.get("sel_relations"), widgets.get("cbbg_music"), widgets.get("cbg_music")))
+    doc_layout.children.append(row(widgets.get("rbg_music"), widgets.get("rg_music"), widgets.get("rslider_amp")))
 
     # Create a dominate document, see https://github.com/Knio/dominate
     d = widgets.dominate_document()
@@ -117,6 +118,17 @@ widgets.add("sel_relations", Select(options=[('0', 'Father'),
                                  title="Relations"))
 
 widgets.add("cbbg_music", CheckboxButtonGroup(labels=["Rock", "Country", "Classical"], active=[]))
+widgets.add("cbg_music", CheckboxGroup(labels=["Rock", "Country", "Classical"], active=[]))
+widgets.add("rbg_music", RadioButtonGroup(labels=["Rock", "Country", "Classical"], active=None))
+widgets.add("rg_music", RadioGroup(labels=["Rock", "Country", "Classical"], active=None))
+
+widgets.add("rslider_amp", RangeSlider(title='Amplitude',
+                                       value=(0.5, 1.5),
+                                       start=0,
+                                       end=2,
+                                       step=0.1,
+                                       callback_policy='mouseup',
+                                       width=200))
 
 widgets.init()
 
