@@ -5,6 +5,9 @@ from bokeh.embed import components
 from bokeh.models.callbacks import CustomJS
 from bokeh.models import Slider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
+from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
+from bokeh.models.widgets import CheckboxButtonGroup, RadioButtonGroup
+
 
 from dominate.tags import *
 import dominate
@@ -126,38 +129,117 @@ class WrapBokeh(object):
         if value.split(".")[0].isdigit():  # epoch
             date = datetime.fromtimestamp(int(value.split(".")[0]) / 1000)
             # TODO: set hours and minutes to 0:0
-            datep.value = date
             args[name] = date
         else:  # string date 'Mon Jun 18 2018'
             date = datetime.strptime(value, "%a %b %d %Y")
             args[name] = date
             date += timedelta(days=1)  # this fixes a bug where the date picked is one day behind the user selection
-            datep.value = date
+
+        datep.value = date
+        self.widgets[name]["value"] = date
         return args
 
     def _set_multisel(self, multisel, name, value, args):
-        selected = value.split(",")
-        multisel.value = selected
+        cache = multisel.value
+
+        if value in cache: cache.remove(value)
+        else: cache.append(value)
+
+        args[name] = cache
+        self.widgets[name]["value"] = cache
+        multisel.value = cache
+        return args
+
+    def _set_button(self, b, name, value, args):
+        """ Button handler
+        - Button doesn't have an value attribute, but we create one.
+        - args["button_name"] is set to True if the user pressed the button
+        :param b:
+        :param name:
+        :param value:
+        :param args:
+        :return: args
+        """
+        value = False
+        if args.get('callerWidget', False):
+            if args['callerWidget'] == name:
+                value = True
+
+        self.widgets[name]["value"] = value
+        args[name] = value
+        return args
+
+    def _set_toggle(self, toggle, name, value, args):
+        value = False
+        if args.get('callerWidget', False):
+            if args['callerWidget'] == name:
+                if not self.widgets[name]["value"]:
+                    value = True
+
+        toggle.active = value
+        self.widgets[name]["value"] = value
+        args[name] = value
+        return args
+
+    def _set_dropdown(self, dropdown, name, value, args):
+        dropdown.value = value
+        self.widgets[name]["value"] = value
+        return args
+
+    def _set_select(self, sel, name, value, args):
+        self.widgets[name]["value"] = value
+        sel.value = value
+        return args
+
+    def _set_cbbg(self, cbbg, name, value, args):
+        active = [int(x) if x else None for x in value.split(",")]
+        self.widgets[name]["value"] = active
+        cbbg.active = active
         return args
 
     def add(self, name, widget):
 
+        # TODO: check for duplicate names...
+
         if isinstance(widget, (Slider, )):
             value_field = 'value'
             setter = self._set_slider
+            value = widget.value
         elif isinstance(widget, (DatePicker, )):
             value_field = 'value'
             setter = self._set_datep
+            value = widget.value
         elif isinstance(widget, (MultiSelect, )):
             value_field = 'value'
             setter = self._set_multisel
+            value = widget.value
+        elif isinstance(widget, (Button, )):
+            value_field = None
+            setter = self._set_button
+            value = None
+        elif isinstance(widget, (Toggle, )):
+            value_field = "active"
+            setter = self._set_toggle
+            value = widget.active
+        elif isinstance(widget, (Dropdown, )):
+            value_field = 'value'
+            setter = self._set_dropdown
+            value = widget.value
+        elif isinstance(widget, (Select, )):
+            value_field = 'value'
+            setter = self._set_select
+            value = widget.value
+        elif isinstance(widget, (CheckboxButtonGroup, )):
+            value_field = 'active'
+            setter = self._set_cbbg
+            value = widget.active
         else:
             self.logger.error("4Unsupported widget class of name {}".format(name))
             return False
 
         self.widgets[name] = {
             'obj': widget,
-            'value': widget.value,
+            'value': value,
             'value_field': value_field,
             'setter': setter,
         }
@@ -168,19 +250,17 @@ class WrapBokeh(object):
         - sets the callback for each widget
         :param args: dict of every widget value by name
         """
-        if req.method == "POST":
-            args = req.form.to_dict()
-        else:
-            args = {}
-        self.logger.debug(args)
+        if req.method == "POST": args = req.form.to_dict()
+        else: args = {}
+        self.logger.info("--> {}".format(args))
 
-        for w_name, w_value in args.items():
-            if w_name == 'callerWidget': continue
-
+        w_name = args.get('callerWidget', None)
+        if w_name:
+            w_value = args.get(w_name, None)
             w = self.widgets[w_name]
             args = w["setter"](w["obj"], w_name, w_value, args)
 
-        self.logger.info(args)
+        self.logger.info("<-- {}".format(args))
         return args
 
     def init(self):
@@ -190,8 +270,13 @@ class WrapBokeh(object):
         return self.widgets[name]["obj"]
 
     def get_value(self, name):
-        if isinstance(self.widgets[name], (Slider, DatePicker, MultiSelect, )):
+        if isinstance(self.widgets[name], (Slider, DatePicker, MultiSelect, Dropdown, Select, )):
             return self.widgets[name]["obj"].value
+        elif isinstance(self.widgets[name], (Button, )):
+            # use cached value
+            return self.widgets[name]["value"]
+        elif isinstance(self.widgets[name], (Toggle, CheckboxButtonGroup, )):
+            return self.widgets[name]["obj"].active
         else:
             self.logger.error("2Unsupported widget class of name {}".format(name))
 

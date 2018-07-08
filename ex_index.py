@@ -11,6 +11,10 @@ from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d
 from bokeh.models import Slider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
+from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
+from bokeh.models.widgets import Paragraph, Div
+from bokeh.models.widgets import CheckboxButtonGroup, RadioButtonGroup
+
 
 from flask import redirect, abort, Blueprint
 from flask import request
@@ -34,6 +38,11 @@ def test_main():
     if not args:
         widgets.get("s_age").value = 25
         widgets.get("s_amp").value = 1
+        text_age = "Please tell me how old you are..."
+    else:
+        text_age = "Wow, you are {} years old!".format(widgets.get("s_age").value)
+
+    p_text_age = Paragraph(text=text_age, width=None, height=None)
 
     # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
     amplitude = float(args.get("s_amp", 1.0))
@@ -47,9 +56,13 @@ def test_main():
     p.add_layout(LinearAxis(y_range_name="foo"), 'left')
 
     doc_layout = layout(sizing_mode='scale_width')
-    doc_layout.children.append(row(widgets.get("s_age")))
+    doc_layout.children.append(row(Div(text="""<h1>pywrapBokeh</h1>"""),
+                               row(Paragraph(text="""Play with all these widgets."""))))
+    doc_layout.children.append(column(widgets.get("s_age"), p_text_age))
     doc_layout.children.append(row(widgets.get("dp_birthday"), row(widgets.get("msel_fruit"))))
     doc_layout.children.append(column(widgets.get("s_amp"), p))
+    doc_layout.children.append(row(widgets.get("b_test"), widgets.get("toggle_1"), widgets.get("dropdn_1")))
+    doc_layout.children.append(row(widgets.get("sel_relations"), widgets.get("cbbg_music")))
 
     # Create a dominate document, see https://github.com/Knio/dominate
     d = widgets.dominate_document()
@@ -72,8 +85,12 @@ widgets.add("dp_birthday", DatePicker(title="Birthday",
                                       value=datetime.today(),
                                       width=300))
 
-widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'), ('1', 'Strawberries'), ('2', 'Oranges'), ('3', 'Grapefruit')],
-                                      value=None,
+widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'),
+                                               ('1', 'Strawberries'),
+                                               ('2', 'Oranges'),
+                                               ('3', 'Grapefruit'),
+                                               ('4', 'Banannas')],
+                                      value=[],
                                       title="Fruit"))
 
 widgets.add("s_amp", Slider(title='Amplitude',
@@ -83,6 +100,23 @@ widgets.add("s_amp", Slider(title='Amplitude',
                             step=0.1,
                             callback_policy='mouseup',
                             width=200))
+
+widgets.add("b_test", Button(label="Press me!"))
+widgets.add("toggle_1", Toggle(label="Toggle me!"))
+widgets.add("dropdn_1", Dropdown(label="Menu", menu=[("First",  '0'),
+                                                     ("Second", '1'),
+                                                     None,
+                                                     ("End",    '2')]))
+
+widgets.add("sel_relations", Select(options=[('0', 'Father'),
+                                          ('1', 'Mother'),
+                                          ('2', 'Baby'),
+                                          ('3', 'Sister'),
+                                          ('4', 'brother')],
+                                 value=None,
+                                 title="Relations"))
+
+widgets.add("cbbg_music", CheckboxButtonGroup(labels=["Rock", "Country", "Classical"], active=[]))
 
 widgets.init()
 
