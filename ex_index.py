@@ -9,6 +9,12 @@ from datetime import datetime, timedelta
 from bokeh.layouts import column, row, layout, Spacer
 from bokeh.plotting import figure
 from bokeh.models import LinearAxis, Range1d
+from bokeh.models import Slider
+from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
+from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
+from bokeh.models.widgets import Paragraph, Div
+from bokeh.models.widgets import CheckboxButtonGroup, RadioButtonGroup
+
 
 from flask import redirect, abort, Blueprint
 from flask import request
@@ -29,29 +35,34 @@ def test_main():
     args = widgets.process_req(request)
 
     # reset page to initial values, if there are no parms
-    if not args: reset_widgets()
+    if not args:
+        widgets.get("s_age").value = 25
+        widgets.get("s_amp").value = 1
+        text_age = "Please tell me how old you are..."
+    else:
+        text_age = "Wow, you are {} years old!".format(widgets.get("s_age").value)
 
-    # redirect to another page based on widget data...
-    _redirect = redirect_lookup_table(widgets.get_value("sel_goto_page"))
-    if _redirect: return redirect(_redirect)
+    p_text_age = Paragraph(text=text_age, width=None, height=None)
 
     # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
-    amplitude = float(args.get("slider_amp", 1.0))
+    amplitude = float(args.get("s_amp", 1.0))
     x = arange(-2 * pi, 2 * pi, 0.1)
     y = amplitude * sin(x)
     y2 = linspace(0, 100, len(y))
-    p = figure(x_range=(-6.5, 6.5), y_range=(-1.1, 1.1), width=400, height=200)
-
+    p = figure(x_range=(-6.5, 6.5), y_range=(-2.0, 2.0), width=600, height=200)
     p.circle(x, y, color="red")
-
     p.extra_y_ranges = {"foo": Range1d(start=0, end=100)}
     p.circle(x, y2, color="blue", y_range_name="foo")
     p.add_layout(LinearAxis(y_range_name="foo"), 'left')
 
     doc_layout = layout(sizing_mode='scale_width')
-    doc_layout.children.append(row(widgets.get_dom("datepair_start"), Spacer(width=50), widgets.get_dom("datepair_end")))
-    doc_layout.children.append(row(widgets.get_dom("slider_amp"), widgets.get_dom("msel_fruit"), widgets.get_dom("sel_goto_page")))
-    doc_layout.children.append(column(p))
+    doc_layout.children.append(row(Div(text="""<h1>pywrapBokeh</h1>"""),
+                               row(Paragraph(text="""Play with all these widgets."""))))
+    doc_layout.children.append(column(widgets.get("s_age"), p_text_age))
+    doc_layout.children.append(row(widgets.get("dp_birthday"), row(widgets.get("msel_fruit"))))
+    doc_layout.children.append(column(widgets.get("s_amp"), p))
+    doc_layout.children.append(row(widgets.get("b_test"), widgets.get("toggle_1"), widgets.get("dropdn_1")))
+    doc_layout.children.append(row(widgets.get("sel_relations"), widgets.get("cbbg_music")))
 
     # Create a dominate document, see https://github.com/Knio/dominate
     d = widgets.dominate_document()
@@ -59,42 +70,53 @@ def test_main():
     return "{}".format(d)
 
 
-def init_widgets():
-    """ init widgets
-    :return: True on success, False otherwise
-    """
-    start = {"name": "datepair_start", "title": "Start", "value": datetime.today(), "width": 150}
-    end = {"name": "datepair_end", "title": "End", "value": datetime.today(), "width": 150}
-    if not widgets.add_datepicker_pair(start, end): return False
-
-    if not widgets.add_slider(name="slider_amp",
-                              title="Amplitude",
-                              value=1,
-                              start=0.1,
-                              end=2.0,
-                              step=0.1): return False
-
-    if not widgets.add_multi_select(name="msel_fruit",
-                                    options=[('a', 'Apples'), ('b', 'Strawberries'), ('c', 'Oranges'), ('d', 'Grapefruit')],
-                                    size=2,
-                                    width=30): return False
-
-    if not widgets.add_select(name="sel_goto_page",
-                              options=[('_', 'Select Next Page'), ('a', 'Page a'), ('b', 'Page b'), ('c', 'Page c')],
-                              size=2,
-                              value=None,
-                              width=30): return False
-
-    return True
-
-
-def reset_widgets():
-    """ reset widget values to some default
-    """
-    widgets.set_value("slider_amp", 1.0)
-
-
 widgets = WrapBokeh(PAGE_URL, app.logger)
-if not init_widgets():
-    app.logger.error("Failed to init widgets")
+widgets.add("s_age", Slider(title='Age',
+                            value=25,
+                            start=1,
+                            end=99,
+                            step=1,
+                            callback_policy='mouseup',
+                            width=200))
+
+widgets.add("dp_birthday", DatePicker(title="Birthday",
+                                      min_date=None,
+                                      max_date=datetime.today(),
+                                      value=datetime.today(),
+                                      width=300))
+
+widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'),
+                                               ('1', 'Strawberries'),
+                                               ('2', 'Oranges'),
+                                               ('3', 'Grapefruit'),
+                                               ('4', 'Banannas')],
+                                      value=[],
+                                      title="Fruit"))
+
+widgets.add("s_amp", Slider(title='Amplitude',
+                            value=1,
+                            start=0,
+                            end=2,
+                            step=0.1,
+                            callback_policy='mouseup',
+                            width=200))
+
+widgets.add("b_test", Button(label="Press me!"))
+widgets.add("toggle_1", Toggle(label="Toggle me!"))
+widgets.add("dropdn_1", Dropdown(label="Menu", menu=[("First",  '0'),
+                                                     ("Second", '1'),
+                                                     None,
+                                                     ("End",    '2')]))
+
+widgets.add("sel_relations", Select(options=[('0', 'Father'),
+                                          ('1', 'Mother'),
+                                          ('2', 'Baby'),
+                                          ('3', 'Sister'),
+                                          ('4', 'brother')],
+                                 value=None,
+                                 title="Relations"))
+
+widgets.add("cbbg_music", CheckboxButtonGroup(labels=["Rock", "Country", "Classical"], active=[]))
+
+widgets.init()
 
