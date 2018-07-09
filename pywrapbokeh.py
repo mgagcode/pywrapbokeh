@@ -8,6 +8,7 @@ from bokeh.models.widgets.sliders import DateSlider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
 from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioButtonGroup, RadioGroup
+from bokeh.models.widgets import Div
 
 
 from dominate.tags import *
@@ -320,6 +321,9 @@ class WrapBokeh(object):
         self._set_all_callbacks()
 
     def get(self, name):
+        if not self.widgets.get(name, False):
+            self.logger.error("{} widget not found".format(name))
+            return Div(text="""<p style="color:red;">!!Missing Widget {}!!</p>""".format(name))
         return self.widgets[name]["obj"]
 
     def get_value(self, name):

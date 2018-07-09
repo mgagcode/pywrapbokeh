@@ -12,7 +12,12 @@ with app.app_context():
 
     # pages
     from ex_index import ex_index
+    from ex_a import ex_a
 
     app.register_blueprint(ex_index)
+    app.register_blueprint(ex_a)
 
 app.run(host="0.0.0.0", port=6800, debug=False)
+
+# consider this first graph example, https://bokeh.pydata.org/en/latest/docs/user_guide/interaction/callbacks.html
+
