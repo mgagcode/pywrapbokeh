@@ -35,8 +35,15 @@ def test_main():
 
     args = widgets.process_req(request)
 
+    # redirect to another page based on widget data...
+    _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
+    if _redirect: return redirect(_redirect)
+
     # reset page to initial values, if there are no parms
+    # the widgets have state, so update if required
     if not args:
+        widgets.get("sel_nexturl").value = ''  # reset next url select
+
         widgets.get("s_age").value = 25
         widgets.get("s_amp").value = 1
         text_age = "Please tell me how old you are..."
@@ -63,7 +70,7 @@ def test_main():
     doc_layout.children.append(row(widgets.get("dp_birthday"), widgets.get("msel_fruit"), widgets.get("ds_birthday")))
     doc_layout.children.append(column(widgets.get("s_amp"), p))
     doc_layout.children.append(row(widgets.get("b_test"), widgets.get("toggle_1"), widgets.get("dropdn_1")))
-    doc_layout.children.append(row(widgets.get("sel_relations"), widgets.get("cbbg_music"), widgets.get("cbg_music")))
+    doc_layout.children.append(row(widgets.get("sel_nexturl"), widgets.get("cbbg_music"), widgets.get("cbg_music")))
     doc_layout.children.append(row(widgets.get("rbg_music"), widgets.get("rg_music"), widgets.get("rslider_amp")))
 
     # Create a dominate document, see https://github.com/Knio/dominate
@@ -117,13 +124,13 @@ widgets.add("dropdn_1", Dropdown(label="Menu", menu=[("First",  '0'),
                                                      None,
                                                      ("End",    '2')]))
 
-widgets.add("sel_relations", Select(options=[('0', 'Father'),
-                                          ('1', 'Mother'),
-                                          ('2', 'Baby'),
-                                          ('3', 'Sister'),
-                                          ('4', 'brother')],
+widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
+                                           ('1', 'Page A'),
+                                           ('2', 'Page B'),
+                                           ('3', 'Page C'),
+                                           ('4', 'Page D')],
                                     value=None,
-                                    title="Relations"))
+                                    title="Select URL"))
 
 widgets.add("cbbg_music", CheckboxButtonGroup(labels=["Rock", "Country", "Classical"], active=[]))
 widgets.add("cbg_music", CheckboxGroup(labels=["Rock", "Country", "Classical"], active=[]))
@@ -137,6 +144,7 @@ widgets.add("rslider_amp", RangeSlider(title='Amplitude',
                                        step=0.1,
                                        callback_policy='mouseup',
                                        width=200))
+
 
 widgets.init()
 

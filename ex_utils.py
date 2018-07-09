@@ -17,12 +17,14 @@ def redirect_lookup_table(value):
     if not value: return None
 
     app.logger.info(value)
-    if 'a' in value:   return "/a/"
-    elif 'b' in value: return "/b/"
-    elif 'c' in value: return "/c/"
-    elif 'd' in value: return "/"
+    if   '1' in value: return "/a/"
+    elif '2' in value: return "/b/"
+    elif '3' in value: return "/c/"
+    elif '0' in value: return "/"
     else:
         app.logger.error("Unknown link request: {}".format(value))
+
+    return None
 
 
 def setup_logging(log_file_name_prefix=__file__, path=".\log", level=logging.INFO, addConsole=False):
@@ -37,6 +39,8 @@ def setup_logging(log_file_name_prefix=__file__, path=".\log", level=logging.INF
     # Here we define our formatter
     FORMAT = "%(relativeCreated)6d %(threadName)15s %(filename)25s:%(lineno)4s - %(name)30s:%(funcName)20s() %(levelname)-5.5s : %(message)s"
     formatter = logging.Formatter(FORMAT)
+
+    if not os.path.exists(path): os.makedirs(path)
 
     allLogHandler_filename = os.path.join(path, "".join([log_file_name_prefix, ".log"]))
     allLogHandler = handlers.RotatingFileHandler(allLogHandler_filename, maxBytes=1024 * 1024, backupCount=4)
