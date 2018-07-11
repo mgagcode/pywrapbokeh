@@ -108,7 +108,7 @@ class WrapBokeh(object):
         _args, _code = self._make_args_parms()
 
         for key in self.widgets:
-            if self.widgets[key]["obj"] is not None:
+            if self.widgets[key]["obj"] is not None and self.widgets[key]["pywrap_trigger"]:
                 __code = _code.replace("callerWidget", key)
                 self.widgets[key]["obj"].callback = CustomJS(args=_args, code=__code)
 
@@ -237,9 +237,18 @@ class WrapBokeh(object):
         rbg.active = _value
         return args
 
+    def _set_textinput(self, sel, name, value, args):
+        if value == None: value = sel.placeholder
+        self.widgets[name]["value"] = value
+        sel.value = value
+        return args
+
     def add(self, name, widget):
 
         # TODO: check for duplicate names...
+
+        pywrap_update_value = False
+        pywrap_trigger = True
 
         if isinstance(widget, (Slider, )):
             value_field = 'value'
@@ -287,6 +296,12 @@ class WrapBokeh(object):
             value_field = 'active'
             setter = self._set_rbg
             value = widget.active
+        elif isinstance(widget, (TextInput, )):
+            value_field = 'value'
+            setter = self._set_textinput
+            value = widget.value
+            pywrap_update_value = True
+            pywrap_trigger = False
         else:
             self.logger.error("4Unsupported widget class of name {}".format(name))
             return False
@@ -296,6 +311,10 @@ class WrapBokeh(object):
             'value': value,
             'value_field': value_field,
             'setter': setter,
+            # internal stuff
+            'pywrap_trigger': pywrap_trigger, # won't cause a JS trigger
+                                              # needed for TextInput() items
+            'pywrap_update_value': pywrap_update_value,
         }
         return True
 
@@ -314,6 +333,14 @@ class WrapBokeh(object):
             w = self.widgets[w_name]
             args = w["setter"](w["obj"], w_name, w_value, args)
 
+        # scan for items that need a manual value update, !TextInput!
+        for key in self.widgets:
+            if self.widgets[key].get("obj", None):
+                if self.widgets[key].get("pywrap_update_value", False):
+                    w_value = args.get(key, None)
+                    widget = self.widgets[key]
+                    args = widget["setter"](widget["obj"], key, w_value, args)
+
         self.logger.info("<-- {}".format(args))
         return args
 
@@ -327,11 +354,16 @@ class WrapBokeh(object):
         return self.widgets[name]["obj"]
 
     def get_value(self, name):
+        if not self.widgets.get(name, False):
+            self.logger.error("{} widget not found".format(name))
+            return None
+
         if isinstance(self.widgets[name], (Slider, RangeSlider,
                                            DatePicker,
                                            MultiSelect,
                                            Dropdown,
-                                           Select, )):
+                                           Select,
+                                           TextInput, )):
             return self.widgets[name]["obj"].value
         elif isinstance(self.widgets[name], (Button, )):
             # use cached value
