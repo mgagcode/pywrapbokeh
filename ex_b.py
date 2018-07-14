@@ -34,13 +34,14 @@ def page_b():
     # this line should go after any "return redirect" statements
     widgets.dominate_document()  # create dominate document
 
-    widgets.add_css("b_submit", """button { background-color: #98FB98; font-size: 16px; }""")
+    widgets.add_css("b_submit", {'background-color': '#98FB98'})
 
     # update state of state pulldown based on country
     if args.get("sel_country", False) and args["sel_country"] in geo_info.keys():
         widgets.get("sel_state").options = [('', 'Select State')] + [(x, x) for x in geo_info[args["sel_country"]]]
 
     # on submit, validate form contents
+    # TODO: this could be a function
     submitted = False
     validated = True
     if args.get("b_submit", False):
@@ -48,22 +49,22 @@ def page_b():
         if args.get("tin_fname", False):
             if args["tin_fname"] in ["", "first name"]:
                 validated = False
-                widgets.add_css("tin_fname", """input { background-color: #F08080;}""")
+                widgets.add_css("tin_fname", {'background-color': '#F08080'})
 
         if args.get("tin_lname", False):
             if args["tin_lname"] in ["", "last name"]:
                 validated = False
-                widgets.add_css("tin_lname", """input { background-color: #F08080;}""")
+                widgets.add_css("tin_lname", {'background-color': '#F08080'})
 
         if args.get("sel_country", False):
             if args["sel_country"] in ["null"]:
                 validated = False
-                widgets.add_css("sel_country", """select { background-color: #F08080;}""")
+                widgets.add_css("sel_country", {'background-color': '#F08080'})
 
         if args.get("sel_state", False):
             if args["sel_state"] in ["null"]:
                 validated = False
-                widgets.add_css("sel_state", """select { background-color: #F08080;}""")
+                widgets.add_css("sel_state", {'background-color': '#F08080'})
 
         if validated:
             app.logger.info("validated")
@@ -95,15 +96,6 @@ widgets.add("tin_fname", TextInput(title="First Name:", placeholder="first name"
 widgets.add("tin_lname", TextInput(title="Last Name:", placeholder="last name", css_classes=['tin_lname']))
 widgets.add("b_submit", Button(label="Submit", css_classes=['b_submit']))
 
-widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
-                                           ('0', 'Home'),
-                                           ('1', 'Page A'),
-                                           ('3', 'Page C'),
-                                           ('4', 'Page D')],
-                                  value=None,
-                                  title="Select URL",
-                                  css_classes=['sel_nexturl']))
-
 geo_info = {
     "United States": ["Washington", "New York", "Texas", "California", "Montanna", "Michigan", "New Mexico"],
     "Canada": ["Ontario", "Saskatchewan", "Manitoba", "Alberta", "Quebec", "Britsh Columbia"]
@@ -113,6 +105,15 @@ states = [('', 'Select State')] + [(x, x) for x in geo_info["United States"]]
 
 widgets.add("sel_country", Select(options=countries, value=None, title="Select Country", css_classes=['sel_country']))
 widgets.add("sel_state",   Select(options=states,    value=None, title="Select State",   css_classes=['sel_state']))
+
+widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
+                                           ('0', 'Home'),
+                                           ('1', 'Page A'),
+                                           ('3', 'Page C'),
+                                           ('4', 'Page D')],
+                                  value=None,
+                                  title="Select URL",
+                                  css_classes=['sel_nexturl']))
 
 widgets.init()
 
