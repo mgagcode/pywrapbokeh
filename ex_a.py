@@ -21,6 +21,7 @@ ex_a = Blueprint('ex_a', __name__)
 def page_a():
 
     args = widgets.process_req(request)
+    app.logger.info("{} : args {}".format(PAGE_URL, args))
 
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))

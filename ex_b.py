@@ -15,9 +15,6 @@ from bokeh.models.widgets.inputs import Select, TextInput
 
 from ex_utils import redirect_lookup_table
 
-import logging
-logger = logging.getLogger()
-
 PAGE_URL = '/b/'
 
 ex_b = Blueprint('ex_b', __name__)
@@ -28,6 +25,7 @@ def page_b():
     change content.
     """
     args = widgets.process_req(request)
+    app.logger.info("{} : args {}".format(PAGE_URL, args))
 
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
@@ -68,14 +66,13 @@ def page_b():
                 widgets.add_css("sel_state", """select { background-color: #F08080;}""")
 
         if validated:
-            logger.info("validated")
+            app.logger.info("validated")
             return redirect("/")
 
     doc_layout = layout(sizing_mode='scale_width')
     doc_layout.children.append(row(Div(text="""<h1>pywrapBokeh</h1><h2>Page B</h2>"""),
                                    Paragraph(text="""Play with all these widgets.""")))
 
-    print(submitted, validated)
     if submitted and not validated:
         doc_layout.children.append(row(Div(text="""<p style="color:#F08080;">Fix the input errors below...</p>""")))
     else:

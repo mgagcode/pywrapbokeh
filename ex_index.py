@@ -38,7 +38,9 @@ def test_main():
 
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
-    if _redirect: return redirect(_redirect)
+    if _redirect:
+        widgets.get("sel_nexturl").value = None  # TODO: make a widget set value method?
+        return redirect(_redirect)
 
     # Create a dominate document, see https://github.com/Knio/dominate
     # this line should go after any "return redirect" statements
