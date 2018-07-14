@@ -21,10 +21,14 @@ ex_a = Blueprint('ex_a', __name__)
 def page_a():
 
     args = widgets.process_req(request)
+    app.logger.info("{} : args {}".format(PAGE_URL, args))
 
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
     if _redirect: return redirect(_redirect)
+
+    # this line should go after any "return redirect" statements
+    widgets.dominate_document()  # create dominate document
 
     # if the clear buttons button is slected, clear the group buttons
     if args.get("but_clear_groups", False):
@@ -37,9 +41,7 @@ def page_a():
 
     doc_layout.children.append(row(widgets.get("sel_nexturl")))
 
-    d = widgets.dominate_document()
-    d = widgets.render(d, doc_layout)
-    return "{}".format(d)
+    return widgets.render(doc_layout)
 
 
 widgets = WrapBokeh(PAGE_URL, app.logger)

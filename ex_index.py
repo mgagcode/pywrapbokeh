@@ -16,7 +16,6 @@ from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
 from bokeh.models.widgets import Paragraph, Div
 from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioGroup, RadioButtonGroup
 
-
 from flask import redirect, abort, Blueprint
 from flask import request
 from flask import current_app as app
@@ -26,6 +25,8 @@ from numpy import pi, arange, sin, linspace
 from pywrapbokeh import WrapBokeh
 
 from ex_utils import redirect_lookup_table
+import logging
+logger = logging.getLogger()
 
 PAGE_URL = '/'
 
@@ -37,7 +38,13 @@ def test_main():
 
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
-    if _redirect: return redirect(_redirect)
+    if _redirect:
+        widgets.get("sel_nexturl").value = None  # TODO: make a widget set value method?
+        return redirect(_redirect)
+
+    # Create a dominate document, see https://github.com/Knio/dominate
+    # this line should go after any "return redirect" statements
+    widgets.dominate_document()
 
     # reset page to initial values, if there are no parms
     # the widgets have state, so update if required
@@ -73,10 +80,8 @@ def test_main():
     doc_layout.children.append(row(widgets.get("sel_nexturl"), widgets.get("cbbg_music"), widgets.get("cbg_music")))
     doc_layout.children.append(row(widgets.get("rbg_music"), widgets.get("rg_music"), widgets.get("rslider_amp")))
 
-    # Create a dominate document, see https://github.com/Knio/dominate
-    d = widgets.dominate_document()
-    d = widgets.render(d, doc_layout)
-    return "{}".format(d)
+
+    return widgets.render(doc_layout)
 
 
 widgets = WrapBokeh(PAGE_URL, app.logger)
