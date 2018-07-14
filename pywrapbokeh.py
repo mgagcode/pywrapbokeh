@@ -250,7 +250,6 @@ class WrapBokeh(object):
 
         pywrap_update_value = False
         pywrap_trigger = True
-        css_type = None
 
         if isinstance(widget, (Slider, )):
             value_field = 'value'
@@ -266,7 +265,6 @@ class WrapBokeh(object):
             value_field = 'value'
             setter = self._set_datep
             value = widget.value
-            css_type = 'input'
         elif isinstance(widget, (DateSlider, )):
             value_field = 'value'
             setter = self._set_dateslider
@@ -280,7 +278,6 @@ class WrapBokeh(object):
             setter = self._set_button
             value = None
             pywrap_update_value = True
-            css_type = "button"
         elif isinstance(widget, (Toggle, )):
             value_field = "active"
             setter = self._set_toggle
@@ -293,7 +290,6 @@ class WrapBokeh(object):
             value_field = 'value'
             setter = self._set_select
             value = widget.value
-            css_type = "select"
         elif isinstance(widget, (CheckboxButtonGroup, CheckboxGroup, )):
             value_field = 'active'
             setter = self._set_cbbg
@@ -308,7 +304,6 @@ class WrapBokeh(object):
             value = widget.value
             pywrap_update_value = True
             pywrap_trigger = False
-            css_type = "input"
         else:
             self.logger.error("4Unsupported widget class of name {}".format(name))
             return False
@@ -322,7 +317,6 @@ class WrapBokeh(object):
             'pywrap_trigger': pywrap_trigger, # won't cause a JS trigger
                                               # needed for TextInput() items
             'pywrap_update_value': pywrap_update_value,
-            'css_type': css_type,
         }
         return True
 
@@ -409,19 +403,16 @@ class WrapBokeh(object):
             self.logger.error("Dominate doc is None, call dominate_document() first")
             return
 
-        if self.widgets[name]["css_type"] is None:
-            self.logger.error("{} has no css type".format(name))
-            return
-
         if not isinstance(css_dict, dict) or css_dict is None:
             self.logger.error("css_dict argument is invalid")
             return
 
         attrs = ""
-        for key, value in css_dict.items():
-            attrs += "{}: {} !important; ".format(key, value)
+        for item, properties in css_dict.items():
+            for key, value in properties.items():
+                attrs += "{}: {} !important; ".format(key, value)
 
-        _css = """.{} {} {{ {} }}""".format(name, self.widgets[name]["css_type"], attrs)
-        with self.dom_doc.body:
-            style(raw(_css))
+            _css = """.{} {} {{ {} }}""".format(name, item, attrs)
+            with self.dom_doc.body:
+                style(raw(_css))
 

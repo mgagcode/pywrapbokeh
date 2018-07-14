@@ -61,8 +61,10 @@ def test_main():
 
     p_text_age = Paragraph(text=text_age, width=None, height=None)
 
-    # set various background colors
-    widgets.add_css("dp_birthday", {'background-color': '#98FB98'})
+    # set various widget attributes
+    widgets.add_css("dp_birthday", {'input': {'background-color': '#98FB98'},
+                                    'label': {'background-color': '#98FB98',
+                                              'font-size':        '16px;'}})
 
 
     # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
