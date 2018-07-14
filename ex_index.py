@@ -39,7 +39,9 @@ def test_main():
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
     if _redirect:
-        widgets.get("sel_nexturl").value = None  # TODO: make a widget set value method?
+        widgets.get("sel_nexturl").value = None
+        # TODO: make a widget set value method?
+        # TODO: or make a init function for all the widgets, and re-init them?
         return redirect(_redirect)
 
     # Create a dominate document, see https://github.com/Knio/dominate
@@ -58,6 +60,14 @@ def test_main():
         text_age = "Wow, you are {} years old!".format(widgets.get("s_age").value)
 
     p_text_age = Paragraph(text=text_age, width=None, height=None)
+
+    # set various widget attributes
+    widgets.add_css("dp_birthday", {'input': {'background-color': '#98FB98'},
+                                    'label': {'background-color': '#98FB98',
+                                              'font-size':        '16px'}})
+
+    widgets.add_css("s_age", {'label': {'background-color': '#98FB98',
+                                        'font-size':        '16px'}})
 
     # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
     amplitude = float(args.get("s_amp", 1.0))
@@ -80,7 +90,6 @@ def test_main():
     doc_layout.children.append(row(widgets.get("sel_nexturl"), widgets.get("cbbg_music"), widgets.get("cbg_music")))
     doc_layout.children.append(row(widgets.get("rbg_music"), widgets.get("rg_music"), widgets.get("rslider_amp")))
 
-
     return widgets.render(doc_layout)
 
 
@@ -91,13 +100,15 @@ widgets.add("s_age", Slider(title='Age',
                             end=99,
                             step=1,
                             callback_policy='mouseup',
-                            width=200))
+                            width=200,
+                            css_classes=['s_age']))
 
 widgets.add("dp_birthday", DatePicker(title="Birthday",
                                       min_date=None,
                                       max_date=datetime.today(),
                                       value=datetime.today(),
-                                      width=300))
+                                      width=300,
+                                      css_classes=['dp_birthday']))
 
 widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'),
                                                ('1', 'Strawberries'),
@@ -105,14 +116,16 @@ widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'),
                                                ('3', 'Grapefruit'),
                                                ('4', 'Banannas')],
                                       value=[],
-                                      title="Fruit"))
+                                      title="Fruit",
+                                      css_classes=['msel_fruit']))
 
 widgets.add("ds_birthday", DateSlider(title="Birthday",
                                       end=datetime.today(),
                                       start=datetime.today() - timedelta(days=30),
                                       step=1,
                                       value=datetime.today(),
-                                      callback_policy='mouseup'))
+                                      callback_policy='mouseup',
+                                      css_classes=['ds_birthday']))
 
 widgets.add("s_amp", Slider(title='Amplitude',
                             value=1,
@@ -120,27 +133,31 @@ widgets.add("s_amp", Slider(title='Amplitude',
                             end=2,
                             step=0.1,
                             callback_policy='mouseup',
-                            width=200))
+                            width=200,
+                            css_classes=['s_amp']))
 
-widgets.add("b_test", Button(label="Press me!"))
-widgets.add("toggle_1", Toggle(label="Toggle me!"))
-widgets.add("dropdn_1", Dropdown(label="Menu", menu=[("First",  '0'),
-                                                     ("Second", '1'),
-                                                     None,
-                                                     ("End",    '2')]))
+widgets.add("b_test", Button(label="Press me!", css_classes=['b_test']))
+widgets.add("toggle_1", Toggle(label="Toggle me!", css_classes=['toggle_1']))
+widgets.add("dropdn_1", Dropdown(label="Menu",
+                                 menu=[("First",  '0'),
+                                       ("Second", '1'),
+                                       None,
+                                       ("End",    '2')],
+                                 css_classes=['dropdn_1']))
 
 widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
                                            ('1', 'Page A'),
                                            ('2', 'Page B'),
                                            ('3', 'Page C'),
                                            ('4', 'Page D')],
-                                    value=None,
-                                    title="Select URL"))
+                                  value=None,
+                                  title="Select URL",
+                                  css_classes=['sel_nexturl']))
 
-widgets.add("cbbg_music", CheckboxButtonGroup(labels=["Rock", "Country", "Classical"], active=[]))
-widgets.add("cbg_music", CheckboxGroup(labels=["Rock", "Country", "Classical"], active=[]))
-widgets.add("rbg_music", RadioButtonGroup(labels=["Rock", "Country", "Classical"], active=None))
-widgets.add("rg_music", RadioGroup(labels=["Rock", "Country", "Classical"], active=None))
+widgets.add("cbbg_music", CheckboxButtonGroup(labels=["Rock", "Country", "Classical"], active=[], css_classes=['cbbg_music']))
+widgets.add("cbg_music", CheckboxGroup(labels=["Rock", "Country", "Classical"], active=[], css_classes=['cbg_music']))
+widgets.add("rbg_music", RadioButtonGroup(labels=["Rock", "Country", "Classical"], active=None, css_classes=['rbg_music']))
+widgets.add("rg_music", RadioGroup(labels=["Rock", "Country", "Classical"], active=None, css_classes=['rg_music']))
 
 widgets.add("rslider_amp", RangeSlider(title='Amplitude',
                                        value=(0.5, 1.5),
@@ -148,7 +165,8 @@ widgets.add("rslider_amp", RangeSlider(title='Amplitude',
                                        end=2,
                                        step=0.1,
                                        callback_policy='mouseup',
-                                       width=200))
+                                       width=200,
+                                       css_classes=['rslider_amp']))
 
 
 widgets.init()

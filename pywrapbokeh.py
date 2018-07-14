@@ -394,13 +394,25 @@ class WrapBokeh(object):
         self.dom_doc.body += raw(_div)
         return "{}".format(self.dom_doc)
 
-    def add_css(self, name, css):
+    def add_css(self, name, css_dict):
+        """ Add css style modifiers for a named widget
+        :param name:
+        :param css_dict: { 'attribute': 'value', ... }
+        """
         if self.dom_doc is None:
             self.logger.error("Dominate doc is None, call dominate_document() first")
             return
 
-        _css = """.{} {}""".format(name, css)
-        _css = _css.replace(";", " !important;")
-        with self.dom_doc.body:
-            style(raw(_css))
+        if not isinstance(css_dict, dict) or css_dict is None:
+            self.logger.error("css_dict argument is invalid")
+            return
+
+        attrs = ""
+        for item, properties in css_dict.items():
+            for key, value in properties.items():
+                attrs += "{}: {} !important; ".format(key, value)
+
+            _css = """.{} {} {{ {} }}""".format(name, item, attrs)
+            with self.dom_doc.body:
+                style(raw(_css))
 
