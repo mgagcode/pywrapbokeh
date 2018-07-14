@@ -395,6 +395,14 @@ class WrapBokeh(object):
         return "{}".format(self.dom_doc)
 
     def add_css(self, name, css):
+        # Current calling pattrn:
+        #  widgets.add_css("tin_fname", """input { background-color: #F08080;}""")
+        #
+        # TODO: since when we add widgets we know the type, we can remove
+        #       the type, perhaps change to this pattrn,
+        # widgets.add_css("tin_fname", { 'background-color': '#F08080' })
+        # and then build the css line...
+
         if self.dom_doc is None:
             self.logger.error("Dominate doc is None, call dominate_document() first")
             return

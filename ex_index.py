@@ -39,7 +39,9 @@ def test_main():
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
     if _redirect:
-        widgets.get("sel_nexturl").value = None  # TODO: make a widget set value method?
+        widgets.get("sel_nexturl").value = None
+        # TODO: make a widget set value method?
+        # TODO: or make a init function for all the widgets, and re-init them?
         return redirect(_redirect)
 
     # Create a dominate document, see https://github.com/Knio/dominate
@@ -79,7 +81,6 @@ def test_main():
     doc_layout.children.append(row(widgets.get("b_test"), widgets.get("toggle_1"), widgets.get("dropdn_1")))
     doc_layout.children.append(row(widgets.get("sel_nexturl"), widgets.get("cbbg_music"), widgets.get("cbg_music")))
     doc_layout.children.append(row(widgets.get("rbg_music"), widgets.get("rg_music"), widgets.get("rslider_amp")))
-
 
     return widgets.render(doc_layout)
 
