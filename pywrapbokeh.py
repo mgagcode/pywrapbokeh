@@ -38,6 +38,7 @@ class WrapBokeh(object):
         if logger: self.logger = logger
 
         self.widgets = {}
+        self.dom_doc = None
 
     def dominate_document(self, bokeh_version='0.13.0'):
         d = dominate.document()
@@ -82,7 +83,7 @@ class WrapBokeh(object):
 
         self.logger.info("created dominate document")
         self.logger.debug(d)
-        return d
+        self.dom_doc = d
 
     def _make_args_parms(self):
         _parms_all = "{"
@@ -377,16 +378,26 @@ class WrapBokeh(object):
         else:
             self.logger.error("2Unsupported widget class of name {}".format(name))
 
-    def render(self, d, layout):
+    def render(self, layout):
         """ render the layout in the current dominate document
         :param d: dominate document
         :param layout: bokeh layout object
         :return: dominate document
         """
+        if self.dom_doc is None:
+            self.logger.error("Dominate doc is None, call dominate_document() first")
+            return "<p>Error: Dominate doc is None, call dominate_document() first</p>"
+
         _script, _div = components(layout)
-        d.body += raw(_script)
-        d.body += raw(_div)
-        return d
+        self.dom_doc.body += raw(_script)
+        self.dom_doc.body += raw(_div)
+        return "{}".format(self.dom_doc)
 
+    def add_css(self, css):
+        if self.dom_doc is None:
+            self.logger.error("Dominate doc is None, call dominate_document() first")
+            return
 
+        with self.dom_doc.body:
+            style(raw(css))
 

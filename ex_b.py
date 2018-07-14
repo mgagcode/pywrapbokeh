@@ -38,22 +38,26 @@ def page_b():
     if _redirect: return redirect(_redirect)
 
     # this line should go after any "return redirect" statements
-    d = widgets.dominate_document()
+    widgets.dominate_document()  # create dominate document
 
     # update state of state pulldown based on country
     if args.get("sel_country", False) and args["sel_country"] in geo_info.keys():
         widgets.get("sel_state").options = [('', 'Select State')] + [(x, x) for x in geo_info[args["sel_country"]]]
 
     # on submit, validate form contents
+    validated = True
     if args.get("b_submit", False):
-        validated = True
         if args.get("tin_fname", False):
             if args["tin_fname"] in ["", "first name"]:
-                validate = False
-                with d.body:
-                    style(raw(""".b_submit button { background-color: #DC143C !important;}"""))
+                validated = False
+                widgets.add_css(""".tin_fname input { background-color: #F08080 !important;}""")
 
-        if validate:
+        if args.get("tin_lname", False):
+            if args["tin_lname"] in ["", "last name"]:
+                validated = False
+                widgets.add_css(""".tin_lname input { background-color: #F08080 !important;}""")
+
+        if validated:
             logger.info("validated")
             return redirect("/")
 
@@ -61,16 +65,20 @@ def page_b():
     doc_layout.children.append(row(Div(text="""<h1>pywrapBokeh</h1><h2>Page B</h2>"""),
                                    Paragraph(text="""Play with all these widgets.""")))
 
+    if not validated:
+        doc_layout.children.append(row(Div(text="""<p>Fix the input errors below...</p>""")))
+
     doc_layout.children.append(column(widgets.get("tin_fname"),
                                       widgets.get("tin_lname"),
                                       widgets.get("sel_country"),
                                       widgets.get("sel_state"),
                                       widgets.get("b_submit")))
 
+
+
     doc_layout.children.append(row(widgets.get("sel_nexturl")))
 
-    d = widgets.render(d, doc_layout)
-    return "{}".format(d)
+    return widgets.render(doc_layout)
 
 
 widgets = WrapBokeh(PAGE_URL, app.logger)
@@ -97,9 +105,6 @@ states = [('', 'Select State')] + [(x, x) for x in geo_info["United States"]]
 
 widgets.add("sel_country", Select(options=countries, value=None, title="Select Country", css_classes=['sel_country']))
 widgets.add("sel_state",   Select(options=states,    value=None, title="Select State",   css_classes=['sel_state']))
-
-# Next
-# !! https://stackoverflow.com/questions/40981485/is-there-a-way-to-format-the-widgets-contents
 
 widgets.init()
 
