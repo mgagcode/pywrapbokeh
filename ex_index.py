@@ -16,7 +16,6 @@ from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
 from bokeh.models.widgets import Paragraph, Div
 from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioGroup, RadioButtonGroup
 
-
 from flask import redirect, abort, Blueprint
 from flask import request
 from flask import current_app as app
@@ -26,6 +25,8 @@ from numpy import pi, arange, sin, linspace
 from pywrapbokeh import WrapBokeh
 
 from ex_utils import redirect_lookup_table
+import logging
+logger = logging.getLogger()
 
 PAGE_URL = '/'
 
