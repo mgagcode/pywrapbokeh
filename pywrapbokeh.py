@@ -277,6 +277,7 @@ class WrapBokeh(object):
             value_field = None
             setter = self._set_button
             value = None
+            pywrap_update_value = True
         elif isinstance(widget, (Toggle, )):
             value_field = "active"
             setter = self._set_toggle
@@ -393,11 +394,13 @@ class WrapBokeh(object):
         self.dom_doc.body += raw(_div)
         return "{}".format(self.dom_doc)
 
-    def add_css(self, css):
+    def add_css(self, name, css):
         if self.dom_doc is None:
             self.logger.error("Dominate doc is None, call dominate_document() first")
             return
 
+        _css = """.{} {}""".format(name, css)
+        _css = _css.replace(";", " !important;")
         with self.dom_doc.body:
-            style(raw(css))
+            style(raw(_css))
 

@@ -15,9 +15,6 @@ from bokeh.models.widgets.inputs import Select, TextInput
 
 from ex_utils import redirect_lookup_table
 
-from dominate.tags import *
-from dominate.util import raw
-
 import logging
 logger = logging.getLogger()
 
@@ -30,7 +27,6 @@ def page_b():
     Shows example of doing form input, with drop downs that dynamically
     change content.
     """
-
     args = widgets.process_req(request)
 
     # redirect to another page based on widget data...
@@ -40,22 +36,36 @@ def page_b():
     # this line should go after any "return redirect" statements
     widgets.dominate_document()  # create dominate document
 
+    widgets.add_css("b_submit", """button { background-color: #98FB98; font-size: 16px; }""")
+
     # update state of state pulldown based on country
     if args.get("sel_country", False) and args["sel_country"] in geo_info.keys():
         widgets.get("sel_state").options = [('', 'Select State')] + [(x, x) for x in geo_info[args["sel_country"]]]
 
     # on submit, validate form contents
+    submitted = False
     validated = True
     if args.get("b_submit", False):
+        submitted = True
         if args.get("tin_fname", False):
             if args["tin_fname"] in ["", "first name"]:
                 validated = False
-                widgets.add_css(""".tin_fname input { background-color: #F08080 !important;}""")
+                widgets.add_css("tin_fname", """input { background-color: #F08080;}""")
 
         if args.get("tin_lname", False):
             if args["tin_lname"] in ["", "last name"]:
                 validated = False
-                widgets.add_css(""".tin_lname input { background-color: #F08080 !important;}""")
+                widgets.add_css("tin_lname", """input { background-color: #F08080;}""")
+
+        if args.get("sel_country", False):
+            if args["sel_country"] in ["null"]:
+                validated = False
+                widgets.add_css("sel_country", """select { background-color: #F08080;}""")
+
+        if args.get("sel_state", False):
+            if args["sel_state"] in ["null"]:
+                validated = False
+                widgets.add_css("sel_state", """select { background-color: #F08080;}""")
 
         if validated:
             logger.info("validated")
@@ -65,16 +75,17 @@ def page_b():
     doc_layout.children.append(row(Div(text="""<h1>pywrapBokeh</h1><h2>Page B</h2>"""),
                                    Paragraph(text="""Play with all these widgets.""")))
 
-    if not validated:
-        doc_layout.children.append(row(Div(text="""<p>Fix the input errors below...</p>""")))
+    print(submitted, validated)
+    if submitted and not validated:
+        doc_layout.children.append(row(Div(text="""<p style="color:#F08080;">Fix the input errors below...</p>""")))
+    else:
+        doc_layout.children.append(row(Div(text="""<p>Enter your data...</p>""")))
 
     doc_layout.children.append(column(widgets.get("tin_fname"),
                                       widgets.get("tin_lname"),
                                       widgets.get("sel_country"),
                                       widgets.get("sel_state"),
                                       widgets.get("b_submit")))
-
-
 
     doc_layout.children.append(row(widgets.get("sel_nexturl")))
 
