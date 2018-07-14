@@ -61,6 +61,10 @@ def test_main():
 
     p_text_age = Paragraph(text=text_age, width=None, height=None)
 
+    # set various background colors
+    widgets.add_css("dp_birthday", {'background-color': '#98FB98'})
+
+
     # make a graph, example at https://bokeh.pydata.org/en/latest/docs/user_guide/plotting.html
     amplitude = float(args.get("s_amp", 1.0))
     x = arange(-2 * pi, 2 * pi, 0.1)
@@ -98,7 +102,8 @@ widgets.add("dp_birthday", DatePicker(title="Birthday",
                                       min_date=None,
                                       max_date=datetime.today(),
                                       value=datetime.today(),
-                                      width=300))
+                                      width=300,
+                                      css_classes=['dp_birthday']))
 
 widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'),
                                                ('1', 'Strawberries'),

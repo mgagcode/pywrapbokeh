@@ -266,6 +266,7 @@ class WrapBokeh(object):
             value_field = 'value'
             setter = self._set_datep
             value = widget.value
+            css_type = 'input'
         elif isinstance(widget, (DateSlider, )):
             value_field = 'value'
             setter = self._set_dateslider
