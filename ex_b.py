@@ -24,7 +24,8 @@ def page_b():
     Shows example of doing form input, with drop downs that dynamically
     change content.
     """
-    args = widgets.process_req(request)
+    args, _redirect = widgets.process_req(request)
+    if not args: return _redirect
     app.logger.info("{} : args {}".format(PAGE_URL, args))
 
     # redirect to another page based on widget data...
@@ -67,8 +68,9 @@ def page_b():
                 widgets.add_css("sel_state", {'select' :{'background-color': '#F08080'}})
 
         if validated:
-            app.logger.info("validated")
-            return redirect("/")
+            app.logger.info("validated: {}".format(args))
+            # TODO: send form data somewhere as a JSON object
+            return redirect("/b/")
 
     doc_layout = layout(sizing_mode='scale_width')
     doc_layout.children.append(row(Div(text="""<h1>pywrapBokeh</h1><h2>Page B</h2>"""),
@@ -79,13 +81,15 @@ def page_b():
     else:
         doc_layout.children.append(row(Div(text="""<p>Enter your data...</p>""")))
 
-    doc_layout.children.append(column(widgets.get("tin_fname"),
-                                      widgets.get("tin_lname"),
-                                      widgets.get("sel_country"),
-                                      widgets.get("sel_state"),
-                                      widgets.get("b_submit")))
+    wbox = widgetbox(widgets.get("tin_fname"),
+                     widgets.get("tin_lname"),
+                     widgets.get("sel_country"),
+                     widgets.get("sel_state"),
+                     widgets.get("b_submit"))
 
-    doc_layout.children.append(row(widgets.get("sel_nexturl")))
+    doc_layout.children.append(row([Spacer(width=200), wbox]))
+
+    doc_layout.children.append(widgets.get("sel_nexturl"))
 
     return widgets.render(doc_layout)
 

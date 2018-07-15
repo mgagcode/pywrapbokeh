@@ -34,7 +34,9 @@ ex_index = Blueprint('ex_index', __name__)
 @ex_index.route(PAGE_URL, methods=['GET', 'POST'])
 def test_main():
 
-    args = widgets.process_req(request)
+    args, _redirect = widgets.process_req(request)
+    if not args: return _redirect
+    app.logger.info("{} : args {}".format(PAGE_URL, args))
 
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
