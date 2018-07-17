@@ -34,7 +34,9 @@ ex_index = Blueprint('ex_index', __name__)
 @ex_index.route(PAGE_URL, methods=['GET', 'POST'])
 def test_main():
 
-    args = widgets.process_req(request)
+    args, _redirect_page_metrics = widgets.process_req(request)
+    if not args: return _redirect_page_metrics
+    app.logger.info("{} : args {}".format(PAGE_URL, args))
 
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
@@ -146,8 +148,8 @@ widgets.add("dropdn_1", Dropdown(label="Menu",
                                  css_classes=['dropdn_1']))
 
 widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
-                                           ('1', 'Page A'),
-                                           ('2', 'Page B'),
+                                           ('1', 'Ajax Stream Example'),
+                                           ('2', 'Form Example'),
                                            ('3', 'Page C'),
                                            ('4', 'Page D')],
                                   value=None,

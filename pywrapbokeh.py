@@ -40,6 +40,40 @@ class WrapBokeh(object):
         self.widgets = {}
         self.dom_doc = None
 
+    def get_page_metrics(self):
+        d = dominate.document()
+        with d.head:
+            script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js")
+            meta(charset="UTF-8")
+
+        with d.body:
+            js = """
+            function postAndRedirect(url, postData, callerWidget) {
+                var postFormStr = "<form id='virtualForm' method='POST' action='" + url + "'>";
+                postFormStr += "<input type='hidden' name='callerWidget' value='" + callerWidget + "'></input>";
+                postFormStr += "<input type='hidden' name='windowWidth' value='" + window.innerWidth + "'></input>";
+                postFormStr += "<input type='hidden' name='windowHeight' value='" + window.innerHeight + "'></input>";
+             
+                postFormStr += "</form>";
+                //alert(postFormStr);
+                //alert(postAndRedirect.caller);  // probably not useful
+                
+                var formElement = $(postFormStr);
+            
+                $('body').append(formElement);
+                $('#virtualForm').submit();
+            }   
+            
+            function postAndRedirectWrapper() {
+                postAndRedirect(window.location.href, {}, 'windowResize' )
+            }
+
+            window.addEventListener("resize", postAndRedirectWrapper);
+            window.dispatchEvent(new Event('resize'));
+            """
+            script(raw(js))
+        return "{}".format(d)
+
     def dominate_document(self, bokeh_version='0.13.0'):
         d = dominate.document()
         with d.head:
@@ -68,6 +102,8 @@ class WrapBokeh(object):
                 }
                 // add the widget that triggers the post
                 postFormStr += "<input type='hidden' name='callerWidget' value='" + callerWidget + "'></input>";
+                postFormStr += "<input type='hidden' name='windowWidth' value='" + window.innerWidth + "'></input>";
+                postFormStr += "<input type='hidden' name='windowHeight' value='" + window.innerHeight + "'></input>";
              
                 postFormStr += "</form>";
                 //alert(postFormStr);
@@ -77,7 +113,16 @@ class WrapBokeh(object):
             
                 $('body').append(formElement);
                 $('#virtualForm').submit();
-            }         
+            }      
+            
+            function postAndRedirectWrapper() {
+                // dummy prevents thinking that landing on URL for first time, resize 
+                // is caused by user after landing on the page
+                postAndRedirect(window.location.href, {'dummy': 0}, 'windowResize' )
+            }
+            
+            window.addEventListener("resize", postAndRedirectWrapper);
+               
             """
             script(raw(js))
 
@@ -329,8 +374,10 @@ class WrapBokeh(object):
         else: args = {}
         self.logger.info("--> {}".format(args))
 
+        if not args: return args, self.get_page_metrics()
+
         w_name = args.get('callerWidget', None)
-        if w_name:
+        if w_name and w_name in self.widgets:
             w_value = args.get(w_name, None)
             w = self.widgets[w_name]
             args = w["setter"](w["obj"], w_name, w_value, args)
@@ -344,7 +391,7 @@ class WrapBokeh(object):
                     args = widget["setter"](widget["obj"], key, w_value, args)
 
         self.logger.info("<-- {}".format(args))
-        return args
+        return args, None
 
     def init(self):
         self._set_all_callbacks()
