@@ -24,13 +24,15 @@ def page_b():
     Shows example of doing form input, with drop downs that dynamically
     change content.
     """
-    args, _redirect = widgets.process_req(request)
-    if not args: return _redirect
+    args, _redirect_page_metrics = widgets.process_req(request)
+    if not args: return _redirect_page_metrics
     app.logger.info("{} : args {}".format(PAGE_URL, args))
 
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
     if _redirect: return redirect(_redirect)
+
+    widgets.get("sel_nexturl").value = '99'
 
     # this line should go after any "return redirect" statements
     widgets.dominate_document()  # create dominate document
@@ -112,7 +114,7 @@ widgets.add("sel_state",   Select(options=states,    value=None, title="Select S
 
 widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
                                            ('0', 'Home'),
-                                           ('1', 'Page A'),
+                                           ('1', 'Ajax Stream Example'),
                                            ('3', 'Page C'),
                                            ('4', 'Page D')],
                                   value=None,

@@ -12,11 +12,12 @@ with app.app_context():
 
     # pages
     from ex_index import ex_index
-    from ex_a import ex_a
+    from ex_a import ex_a, ex_get_new_data
     from ex_b import ex_b
 
     app.register_blueprint(ex_index)
     app.register_blueprint(ex_a)
+    app.register_blueprint(ex_get_new_data)
     app.register_blueprint(ex_b)
 
 app.run(host="0.0.0.0", port=6800, debug=False)
