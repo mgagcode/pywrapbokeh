@@ -25,3 +25,10 @@ https://bokeh.pydata.org/en/latest/
 How It Works:
 Every bokeh widget callback is assigned a bit of (common) javascript that causes a web refresh with all the widget parameters in the URL. In this way the Flask route can scrape the URl and get all widget parameters and handle them in python.
 
+---
+
+pywrapbokeh, Copyright (c) 2018, Martin Guthrie, All Rights Reserved
+License: MIT License
+
+
+

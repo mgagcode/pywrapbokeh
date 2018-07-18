@@ -1,5 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+"""
+pywrapbokeh, Copyright (c) 2018, Martin Guthrie, All Rights Reserved
+License: MIT License
+
+"""
+
 from datetime import datetime, timedelta
 from bokeh.embed import components
 from bokeh.models.callbacks import CustomJS
@@ -9,7 +16,6 @@ from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Sele
 from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
 from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioButtonGroup, RadioGroup
 from bokeh.models.widgets import Div
-
 
 from dominate.tags import *
 import dominate
