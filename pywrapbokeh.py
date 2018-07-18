@@ -25,6 +25,7 @@ class WrapBokeh(object):
     """
     class StubLogger(object):
         """ stubb out logger if none is provided"""
+        # TODO: support print to console.  Issue here is flask app logger is tough to work around.
         def info(self, *args,**kwargs): pass
         def error(self, *args,**kwargs): pass
         def debug(self, *args, **kwargs): pass
@@ -74,8 +75,19 @@ class WrapBokeh(object):
             script(raw(js))
         return "{}".format(d)
 
-    def dominate_document(self, bokeh_version='0.13.0'):
-        d = dominate.document()
+    def dominate_document(self, title="pywrapBokeh", bokeh_version='0.13.0'):
+        """ Create dominate document, see https://github.com/Knio/dominate
+
+        Populates the required bokeh/jquery links
+        Sets up common javascript
+
+        The dominate document is returned, but if you don't need to use it, just ignore it
+
+        :param title: title string
+        :param bokeh_version: version
+        :return: dominate document
+        """
+        d = dominate.document(title=title)
         with d.head:
             link(href="https://cdn.pydata.org/bokeh/release/bokeh-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
                  rel="stylesheet",
@@ -129,6 +141,7 @@ class WrapBokeh(object):
         self.logger.info("created dominate document")
         self.logger.debug(d)
         self.dom_doc = d
+        return d
 
     def _make_args_parms(self):
         _parms_all = "{"
@@ -231,11 +244,6 @@ class WrapBokeh(object):
         """ Button handler
         - Button doesn't have an value attribute, but we create one.
         - args["button_name"] is set to True if the user pressed the button
-        :param b:
-        :param name:
-        :param value:
-        :param args:
-        :return: args
         """
         value = False
         if args.get('callerWidget', False):
@@ -290,8 +298,21 @@ class WrapBokeh(object):
         return args
 
     def add(self, name, widget):
+        """ Add a bokeh widget
+        API
+          WrapBokeh.add( <name_of_widget>, <bokeh API>(..., [css_classes=['sel_fruit']]))
 
-        # TODO: check for duplicate names...
+        Notes:
+          1) if you want to affect widget properties (color, font size, etc) you need to set css_classes
+
+        :param name: unique name (string)
+        :param widget: bokeh widget
+        :return: True on success, False otherwise
+        """
+
+        if self.widgets.get(name, False):
+            self.logger.error("{} widget name duplicate".format(name))
+            return False
 
         pywrap_update_value = False
         pywrap_trigger = True
@@ -369,13 +390,19 @@ class WrapBokeh(object):
         """ Updates the state of every widget based on the values of each widget in args
         - sets the callback for each widget
         :param args: dict of every widget value by name
+        :return args dict, redirect render
         """
         if req.method == "POST": args = req.form.to_dict()
         else: args = {}
-        self.logger.info("--> {}".format(args))
+        self.logger.debug("--> {}".format(args))
 
+        # if args is false/{}, this is the first time landing
+        # on this page, and we want to trigger get_page_metrics()
+        # which will get page metrics and come right back here
         if not args: return args, self.get_page_metrics()
 
+        # which ever widget the user touched, run its handler
+        # so that its args can be correct
         w_name = args.get('callerWidget', None)
         if w_name and w_name in self.widgets:
             w_value = args.get(w_name, None)
@@ -394,15 +421,27 @@ class WrapBokeh(object):
         return args, None
 
     def init(self):
+        """ init - call this after all the widgets on a page have been created
+        """
         self._set_all_callbacks()
 
     def get(self, name):
+        """ get bokeh object by name
+        - client can access bokeh obj methods and variables
+        :param name:
+        :return: bokeh object
+        """
         if not self.widgets.get(name, False):
             self.logger.error("{} widget not found".format(name))
             return Div(text="""<p style="color:red;">!!Missing Widget {}!!</p>""".format(name))
         return self.widgets[name]["obj"]
 
     def get_value(self, name):
+        """ return the value of a bokeh object
+        - in general this is not needed because the page 'args' have the same value
+        :param name: name of widget
+        :return: None on error, otherwise widget value/active/cached
+        """
         if not self.widgets.get(name, False):
             self.logger.error("{} widget not found".format(name))
             return None
@@ -423,14 +462,14 @@ class WrapBokeh(object):
                                              RadioButtonGroup,
                                              RadioGroup, )):
             return self.widgets[name]["obj"].active
-        else:
-            self.logger.error("2Unsupported widget class of name {}".format(name))
+
+        self.logger.error("Unsupported widget class of name {}".format(name))
+        return None
 
     def render(self, layout):
         """ render the layout in the current dominate document
-        :param d: dominate document
         :param layout: bokeh layout object
-        :return: dominate document
+        :return: dominate document with bokeh objects rendered within it
         """
         if self.dom_doc is None:
             self.logger.error("Dominate doc is None, call dominate_document() first")
@@ -443,6 +482,12 @@ class WrapBokeh(object):
 
     def add_css(self, name, css_dict):
         """ Add css style modifiers for a named widget
+        example
+          widgets.add_css("sel_state", {'select' :{'background-color': '#F08080'}})
+
+        Using this API may require experimentation.  Using the browser, 'inspect'
+        the page and try and find the widget style properties and modify them.
+
         :param name:
         :param css_dict: { 'attribute': 'value', ... }
         """
