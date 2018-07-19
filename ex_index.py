@@ -25,8 +25,6 @@ from numpy import pi, arange, sin, linspace
 from pywrapbokeh import WrapBokeh
 
 from ex_utils import redirect_lookup_table
-import logging
-logger = logging.getLogger()
 
 PAGE_URL = '/'
 

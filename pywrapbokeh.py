@@ -514,3 +514,5 @@ class WrapBokeh(object):
             with self.dom_doc.body:
                 style(raw(_css))
 
+    def dom_doc(self):
+        return self.dom_doc
