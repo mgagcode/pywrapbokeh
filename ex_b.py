@@ -45,10 +45,9 @@ def page_b():
 
     # on submit, validate form contents
     # TODO: this could be a function
-    submitted = False
+    submitted = args.get("b_submit", False)
     validated = True
-    if args.get("b_submit", False):
-        submitted = True
+    if submitted:
         if args.get("tin_fname", False):
             if args["tin_fname"] in ["", "first name"]:
                 validated = False
