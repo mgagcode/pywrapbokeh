@@ -13,7 +13,7 @@ from bokeh.models.widgets import Paragraph, Div
 from bokeh.models.widgets.buttons import Button
 from bokeh.models.widgets.inputs import Select, TextInput
 
-from ex_utils import redirect_lookup_table
+from ex_index import redirect_lookup_table
 
 PAGE_URL = '/b/'
 
@@ -45,10 +45,9 @@ def page_b():
 
     # on submit, validate form contents
     # TODO: this could be a function
-    submitted = False
+    submitted = args.get("b_submit", False)
     validated = True
-    if args.get("b_submit", False):
-        submitted = True
+    if submitted:
         if args.get("tin_fname", False):
             if args["tin_fname"] in ["", "first name"]:
                 validated = False
