@@ -21,6 +21,9 @@ from dominate.tags import *
 import dominate
 from dominate.util import raw
 
+import random
+import string
+
 
 class WrapBokeh(object):
     """ A class to wrap interactive widegts from bokeh.
@@ -29,6 +32,9 @@ class WrapBokeh(object):
     - if the boken widget is not interactive, then you don't need to use this, for example
       panels with tabs are not strictly interactive, ie no callback is needed
     """
+
+    LEN_RANDOM_CLASS = 6
+
     class StubLogger(object):
         """ stubb out logger if none is provided"""
         # TODO: support print to console.  Issue here is flask app logger is tough to work around.
@@ -471,6 +477,36 @@ class WrapBokeh(object):
 
         self.logger.error("Unsupported widget class of name {}".format(name))
         return None
+
+    def render_div(self, layout, cls=None):
+        """ add a div section to the dominate document
+
+        #Adding a div with class style,
+        doc_layout = layout(sizing_mode='scale_width')
+        doc_layout.children.append(Div(text="<h1>Your Stuff Goes Here...</h1>"))
+        ...
+        w.add_css("test", {'div': {'background-color': '#98FB98'}})
+        w.render_div(doc_layout, cls="test")
+
+        :param layout: bokeh layout object
+        :param cls: class name of div, so that a style can be applied
+
+        TODO: Should check if class name was already used??
+        """
+        if self.dom_doc is None:
+            self.logger.error("Dominate doc is None, call dominate_document() first")
+            return "<p>Error: Dominate doc is None, call dominate_document() first</p>"
+
+        if cls is None:
+            # if the caller hasn't set a class name, make up a random one
+            cls = ''.join(random.choices(string.ascii_uppercase + string.digits, k=self.LEN_RANDOM_CLASS))
+
+        _script, _div = components(layout)
+        d = div(cls=cls)
+        with d:
+            raw(_script)
+            raw(_div)
+        self.dom_doc.add(d)
 
     def render(self, layout):
         """ render the layout in the current dominate document
