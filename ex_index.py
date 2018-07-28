@@ -24,9 +24,22 @@ from numpy import pi, arange, sin, linspace
 
 from pywrapbokeh import WrapBokeh
 
-from ex_utils import redirect_lookup_table
-import logging
-logger = logging.getLogger()
+def redirect_lookup_table(value):
+    """ based on a key (value) return the next URL to go to
+    :param value: key to url
+    :return: url, or None if value is not mapped
+    """
+    if not value: return None
+
+    app.logger.info(value)
+    if   '1' in value: return "/a/"
+    elif '2' in value: return "/b/"
+    elif '3' in value: return "/c/"
+    elif '0' in value: return "/"
+    else:
+        app.logger.error("Unknown link request: {}".format(value))
+
+    return None
 
 PAGE_URL = '/'
 
