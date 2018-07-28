@@ -15,6 +15,10 @@ from bokeh.models.widgets.inputs import Select, TextInput
 
 from ex_index import redirect_lookup_table
 
+# !! WARNING dominate tag names can collide with bokeh names :(
+from dominate.tags import style
+from dominate.util import raw
+
 PAGE_URL = '/b/'
 
 ex_b = Blueprint('ex_b', __name__)
@@ -24,6 +28,11 @@ def page_b():
     Shows example of doing form input, with drop downs that dynamically
     change content.
     """
+    # Create a dominate document, see https://github.com/Knio/dominate
+    widgets.dominate_document()
+    with widgets.dom_doc.body:  # add css elements here...
+        style(raw("""body {background-color:powderblue;}"""))
+
     args, _redirect_page_metrics = widgets.process_req(request)
     if not args: return _redirect_page_metrics
     app.logger.info("{} : args {}".format(PAGE_URL, args))
@@ -33,9 +42,6 @@ def page_b():
     if _redirect: return redirect(_redirect)
 
     widgets.get("sel_nexturl").value = '99'
-
-    # this line should go after any "return redirect" statements
-    widgets.dominate_document()  # create dominate document
 
     widgets.add_css("b_submit", { 'button': {'background-color': '#98FB98'}})
 

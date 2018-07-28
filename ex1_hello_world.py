@@ -8,6 +8,9 @@ from bokeh.layouts import layout, column
 from bokeh.models.widgets import Paragraph, Div
 from bokeh.models.widgets.inputs import Select
 
+from dominate.tags import *
+from dominate.util import raw
+
 from pywrapbokeh import WrapBokeh
 
 app = Flask(__name__)
@@ -15,6 +18,11 @@ app = Flask(__name__)
 
 @app.route("/", methods=['GET', 'POST'])
 def hello():
+    # see https://github.com/Knio/dominate
+    widgets.dominate_document()  # create dominate document
+    with widgets.dom_doc.body:  # add css elements here...
+        style(raw("""body {background-color:powderblue;}"""))
+
     # check/get page metrics and get args for the page
     args, _redirect_page_metrics = widgets.process_req(request)
     if not args: return _redirect_page_metrics
@@ -26,10 +34,6 @@ def hello():
 
     # check args here for actions that would redirect to another page
     # if args.get( name ) == something: return redirect( new_url )
-
-    # this line should go after any "return redirect" statements above
-    # see https://github.com/Knio/dominate
-    widgets.dominate_document()  # create dominate document
 
     # start a bokeh layout
     doc_layout = layout(sizing_mode='scale_width')

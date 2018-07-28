@@ -16,6 +16,10 @@ from bokeh.models import AjaxDataSource
 import math
 from pywrapbokeh import WrapBokeh
 
+# !! WARNING dominate tag names can collide with bokeh names :(
+from dominate.tags import style
+from dominate.util import raw
+
 from ex_index import redirect_lookup_table
 
 PAGE_URL = '/a/'
@@ -35,6 +39,10 @@ def get_x():
 ex_a = Blueprint('ex_a', __name__)
 @ex_a.route(PAGE_URL, methods=['GET', 'POST'])
 def page_a():
+    # Create a dominate document, see https://github.com/Knio/dominate
+    widgets.dominate_document()
+    with widgets.dom_doc.body:  # add css elements here...
+        style(raw("""body {background-color:powderblue;}"""))
 
     args, _redirect_page_metrics = widgets.process_req(request)
     if not args: return _redirect_page_metrics
@@ -45,9 +53,6 @@ def page_a():
     if _redirect: return redirect(_redirect)
 
     widgets.get("sel_nexturl").value = '99'
-
-    # this line should go after any "return redirect" statements
-    widgets.dominate_document()  # create dominate document
 
     doc_layout = layout(sizing_mode='scale_width')
 

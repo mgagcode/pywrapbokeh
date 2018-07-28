@@ -20,6 +20,10 @@ from flask import redirect, abort, Blueprint
 from flask import request
 from flask import current_app as app
 
+# !! WARNING dominate tag names can collide with bokeh names :(
+from dominate.tags import style
+from dominate.util import raw
+
 from numpy import pi, arange, sin, linspace
 
 from pywrapbokeh import WrapBokeh
@@ -46,6 +50,10 @@ PAGE_URL = '/'
 ex_index = Blueprint('ex_index', __name__)
 @ex_index.route(PAGE_URL, methods=['GET', 'POST'])
 def test_main():
+    # Create a dominate document, see https://github.com/Knio/dominate
+    widgets.dominate_document()
+    with widgets.dom_doc.body:  # add css elements here...
+        style(raw("""body {background-color:powderblue;}"""))
 
     args, _redirect_page_metrics = widgets.process_req(request)
     if not args: return _redirect_page_metrics
@@ -58,10 +66,6 @@ def test_main():
         # TODO: make a widget set value method?
         # TODO: or make a init function for all the widgets, and re-init them?
         return redirect(_redirect)
-
-    # Create a dominate document, see https://github.com/Knio/dominate
-    # this line should go after any "return redirect" statements
-    widgets.dominate_document()
 
     # reset page to initial values, if there are no parms
     # the widgets have state, so update if required

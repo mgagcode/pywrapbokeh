@@ -54,10 +54,7 @@ class WrapBokeh(object):
         self.dom_doc = None
 
     def get_page_metrics(self):
-        d = dominate.document()
-        with d.head:
-            script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js")
-            meta(charset="UTF-8")
+        d = self.dom_doc
 
         with d.body:
             js = """
@@ -85,6 +82,7 @@ class WrapBokeh(object):
             window.dispatchEvent(new Event('resize'));
             """
             script(raw(js))
+
         return "{}".format(d)
 
     def dominate_document(self, title="pywrapBokeh", bokeh_version='0.13.0'):
@@ -490,15 +488,12 @@ class WrapBokeh(object):
 
         :param layout: bokeh layout object
         :param cls: class name of div, so that a style can be applied
-
-        TODO: Should check if class name was already used??
         """
         if self.dom_doc is None:
             self.logger.error("Dominate doc is None, call dominate_document() first")
             return "<p>Error: Dominate doc is None, call dominate_document() first</p>"
 
         if cls is None:
-            # if the caller hasn't set a class name, make up a random one
             cls = ''.join(random.choices(string.ascii_uppercase + string.digits, k=self.LEN_RANDOM_CLASS))
 
         _script, _div = components(layout)
