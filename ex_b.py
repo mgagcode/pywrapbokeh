@@ -13,7 +13,7 @@ from bokeh.models.widgets import Paragraph, Div
 from bokeh.models.widgets.buttons import Button
 from bokeh.models.widgets.inputs import Select, TextInput
 
-from ex_utils import redirect_lookup_table
+from ex_index import redirect_lookup_table
 
 PAGE_URL = '/b/'
 

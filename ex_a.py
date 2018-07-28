@@ -16,7 +16,7 @@ from bokeh.models import AjaxDataSource
 import math
 from pywrapbokeh import WrapBokeh
 
-from ex_utils import redirect_lookup_table
+from ex_index import redirect_lookup_table
 
 PAGE_URL = '/a/'
 PAGE_URL_GET_DATA = "/get_new_data"
