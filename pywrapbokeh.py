@@ -63,6 +63,7 @@ class WrapBokeh(object):
                 postFormStr += "<input type='hidden' name='callerWidget' value='" + callerWidget + "'></input>";
                 postFormStr += "<input type='hidden' name='windowWidth' value='" + window.innerWidth + "'></input>";
                 postFormStr += "<input type='hidden' name='windowHeight' value='" + window.innerHeight + "'></input>";
+                postFormStr += "<input type='hidden' name='windowUrl' value='" +url + "'></input>";
              
                 postFormStr += "</form>";
                 //alert(postFormStr);
@@ -126,6 +127,7 @@ class WrapBokeh(object):
                 postFormStr += "<input type='hidden' name='callerWidget' value='" + callerWidget + "'></input>";
                 postFormStr += "<input type='hidden' name='windowWidth' value='" + window.innerWidth + "'></input>";
                 postFormStr += "<input type='hidden' name='windowHeight' value='" + window.innerHeight + "'></input>";
+                postFormStr += "<input type='hidden' name='windowUrl' value='" +url + "'></input>";
              
                 postFormStr += "</form>";
                 //alert(postFormStr);
