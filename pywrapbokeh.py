@@ -446,6 +446,10 @@ class WrapBokeh(object):
             return Div(text="""<p style="color:red;">!!Missing Widget {}!!</p>""".format(name))
         return self.widgets[name]["obj"]
 
+    def exist(self, name):
+        if self.widgets.get(name, False): return True
+        return False
+
     def get_value(self, name):
         """ return the value of a bokeh object
         - in general this is not needed because the page 'args' have the same value
