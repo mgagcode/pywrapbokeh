@@ -12,6 +12,8 @@ from bokeh.plotting import figure
 from bokeh.models.widgets import Paragraph, Div
 from bokeh.models.widgets.inputs import Select
 from bokeh.models import AjaxDataSource
+from bokeh.models.callbacks import CustomJS
+
 
 import math
 from pywrapbokeh import WrapBokeh
@@ -24,6 +26,7 @@ from ex_index import redirect_lookup_table
 
 PAGE_URL = '/a/'
 PAGE_URL_GET_DATA = "/get_new_data"
+widgets = None
 
 x, y = 0, 0
 
@@ -39,6 +42,10 @@ def get_x():
 ex_a = Blueprint('ex_a', __name__)
 @ex_a.route(PAGE_URL, methods=['GET', 'POST'])
 def page_a():
+    global widgets
+
+    init_widgets()
+
     # Create a dominate document, see https://github.com/Knio/dominate
     widgets.dominate_document()
     with widgets.dom_doc.body:  # add css elements here...
@@ -59,10 +66,11 @@ def page_a():
     doc_layout.children.append(row(Div(text="""<h1>pywrapBokeh</h1><h2>Page A</h2>"""),
                                    Paragraph(text="""Play with all these widgets.""")))
 
-    source = AjaxDataSource(data_url="http://127.0.0.1:6800{}".format(PAGE_URL_GET_DATA),
-                            polling_interval=1000, mode='append')
-
-    source.data = dict(x=[], y=[])
+    source = AjaxDataSource(data=dict(x=[], y=[]),
+                            adapter=CustomJS(code="return cb_data.response"),
+                            data_url="http://127.0.0.1:6800{}".format(PAGE_URL_GET_DATA),
+                            polling_interval=1000,
+                            mode='append')
 
     fig = figure(title="Streaming Example")
     fig.line('x', 'y', source=source)
@@ -74,19 +82,21 @@ def page_a():
     return widgets.render(doc_layout)
 
 
-widgets = WrapBokeh(PAGE_URL, app.logger)
+def init_widgets():
+    global widgets
 
+    widgets = WrapBokeh(PAGE_URL, app.logger)
 
-widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
-                                           ('0', 'Home'),
-                                           ('2', 'Form Example'),
-                                           ('3', 'Page C'),
-                                           ('4', 'Page D')],
-                                  value=None,
-                                  title="Select URL"))
+    widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
+                                               ('0', 'Home'),
+                                               ('2', 'Form Example'),
+                                               ('3', 'Page C'),
+                                               ('4', 'Page D')],
+                                      value=None,
+                                      title="Select URL"))
 
-# Next
-# https://bokeh.pydata.org/en/latest/docs/user_guide/examples/interaction_data_table.html
+    # Next
+    # https://bokeh.pydata.org/en/latest/docs/user_guide/examples/interaction_data_table.html
 
-widgets.init()
+    widgets.init()
 

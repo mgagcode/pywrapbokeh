@@ -20,6 +20,13 @@ from dominate.tags import style
 from dominate.util import raw
 
 PAGE_URL = '/b/'
+widgets = None
+
+geo_info = {
+    "United States": ["Washington", "New York", "Texas", "California", "Montanna", "Michigan", "New Mexico"],
+    "Canada": ["Ontario", "Saskatchewan", "Manitoba", "Alberta", "Quebec", "Britsh Columbia"]
+}
+
 
 ex_b = Blueprint('ex_b', __name__)
 @ex_b.route(PAGE_URL, methods=['GET', 'POST'])
@@ -28,6 +35,9 @@ def page_b():
     Shows example of doing form input, with drop downs that dynamically
     change content.
     """
+
+    init_widgets()
+
     # Create a dominate document, see https://github.com/Knio/dominate
     widgets.dominate_document()
     with widgets.dom_doc.body:  # add css elements here...
@@ -40,8 +50,6 @@ def page_b():
     # redirect to another page based on widget data...
     _redirect = redirect_lookup_table(args.get("sel_nexturl", None))
     if _redirect: return redirect(_redirect)
-
-    widgets.get("sel_nexturl").value = '99'
 
     widgets.add_css("b_submit", { 'button': {'background-color': '#98FB98'}})
 
@@ -101,30 +109,29 @@ def page_b():
     return widgets.render(doc_layout)
 
 
-widgets = WrapBokeh(PAGE_URL, app.logger)
+def init_widgets():
+    global widgets
+    widgets = WrapBokeh(PAGE_URL, app.logger)
 
-widgets.add("tin_fname", TextInput(title="First Name:", placeholder="first name", css_classes=['tin_fname']))
-widgets.add("tin_lname", TextInput(title="Last Name:", placeholder="last name", css_classes=['tin_lname']))
-widgets.add("b_submit", Button(label="Submit", css_classes=['b_submit']))
+    widgets.add("tin_fname", TextInput(title="First Name:", placeholder="first name", css_classes=['tin_fname']))
+    widgets.add("tin_lname", TextInput(title="Last Name:", placeholder="last name", css_classes=['tin_lname']))
+    widgets.add("b_submit", Button(label="Submit", css_classes=['b_submit']))
 
-geo_info = {
-    "United States": ["Washington", "New York", "Texas", "California", "Montanna", "Michigan", "New Mexico"],
-    "Canada": ["Ontario", "Saskatchewan", "Manitoba", "Alberta", "Quebec", "Britsh Columbia"]
-}
-countries = [('', 'Select Country')] + [(x, x) for x in geo_info.keys()]
-states = [('', 'Select State')] + [(x, x) for x in geo_info["United States"]]
 
-widgets.add("sel_country", Select(options=countries, value=None, title="Select Country", css_classes=['sel_country']))
-widgets.add("sel_state",   Select(options=states,    value=None, title="Select State",   css_classes=['sel_state']))
+    countries = [('', 'Select Country')] + [(x, x) for x in geo_info.keys()]
+    states = [('', 'Select State')] + [(x, x) for x in geo_info["United States"]]
 
-widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
-                                           ('0', 'Home'),
-                                           ('1', 'Ajax Stream Example'),
-                                           ('3', 'Page C'),
-                                           ('4', 'Page D')],
-                                  value=None,
-                                  title="Select URL",
-                                  css_classes=['sel_nexturl']))
+    widgets.add("sel_country", Select(options=countries, value=None, title="Select Country", css_classes=['sel_country']))
+    widgets.add("sel_state",   Select(options=states,    value=None, title="Select State",   css_classes=['sel_state']))
 
-widgets.init()
+    widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
+                                               ('0', 'Home'),
+                                               ('1', 'Ajax Stream Example'),
+                                               ('3', 'Page C'),
+                                               ('4', 'Page D')],
+                                      value=None,
+                                      title="Select URL",
+                                      css_classes=['sel_nexturl']))
+
+    widgets.init()
 

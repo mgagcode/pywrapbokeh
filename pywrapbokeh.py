@@ -15,15 +15,14 @@ from bokeh.models import Slider, RangeSlider, AjaxDataSource
 from bokeh.models.widgets.sliders import DateSlider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
-from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioButtonGroup, RadioGroup, Tabs
-from bokeh.models.widgets import Div, Widget
+from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioButtonGroup, RadioGroup
+from bokeh.models.widgets import Div
 from bokeh.models import LayoutDOM
 from bokeh.core.properties import String
 
 from dominate.tags import *
 import dominate
 from dominate.util import raw
-
 import random
 import string
 
@@ -139,7 +138,7 @@ class WrapBokeh(object):
 
         return "{}".format(d)
 
-    def dominate_document(self, title="pywrapBokeh", bokeh_version='0.13.0'):
+    def dominate_document(self, title="pywrapBokeh", bokeh_version='1.0.0rc3'):
         """ Create dominate document, see https://github.com/Knio/dominate
 
         Populates the required bokeh/jquery links
@@ -153,18 +152,18 @@ class WrapBokeh(object):
         """
         d = dominate.document(title=title)
         with d.head:
-            link(href="https://cdn.pydata.org/bokeh/release/bokeh-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
+            link(href="https://cdn.pydata.org/bokeh/dev/bokeh-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
                  rel="stylesheet",
                  type="text/css")
-            script(src="https://cdn.pydata.org/bokeh/release/bokeh-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
-            link(href="https://cdn.pydata.org/bokeh/release/bokeh-widgets-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
+            script(src="https://cdn.pydata.org/bokeh/dev/bokeh-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+            link(href="https://cdn.pydata.org/bokeh/dev/bokeh-widgets-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
                  rel="stylesheet",
                  type="text/css")
-            script(src="https://cdn.pydata.org/bokeh/release/bokeh-widgets-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
-            link(href="https://cdn.pydata.org/bokeh/release/bokeh-tables-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
+            script(src="https://cdn.pydata.org/bokeh/dev/bokeh-widgets-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+            link(href="https://cdn.pydata.org/bokeh/dev/bokeh-tables-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
                  rel="stylesheet",
                  type="text/css")
-            script(src="https://cdn.pydata.org/bokeh/release/bokeh-tables-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+            script(src="https://cdn.pydata.org/bokeh/dev/bokeh-tables-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
 
             script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js")
 
@@ -282,7 +281,7 @@ class WrapBokeh(object):
         :param name:
         :param value:
         """
-        if value == 'NaN':
+        if value in ['NaN', None]:
             _value = slider.value
         if isinstance(value, str):
             _value = float(value) if "." in value else int(value)
@@ -294,6 +293,8 @@ class WrapBokeh(object):
         :param name:
         :param value:
         """
+        if value is None: value = "{},{}".format(slider.value[0], slider.value[1])
+
         _values = value.split(",")
         for idx, value in enumerate(_values):
             if value == 'NaN':
@@ -306,9 +307,10 @@ class WrapBokeh(object):
 
     def _set_datep(self, datep, name, value, args):
         # the datepicker will return an epoch if it wasn't the callback trigger
-        # and it returns a 'Mon Jun 18 2018' format if it was the trigger, handle both...
-        # And note there is a one day off bug that is also handled.
-        if value.split(".")[0].isdigit():  # epoch
+        # and it returns a datetime format if it was the trigger, handle both...
+        if isinstance(value, datetime):
+            date = value
+        elif value.split(".")[0].isdigit():  # epoch
             date = datetime.fromtimestamp(int(value.split(".")[0]) / 1000)
             # TODO: set hours and minutes to 0:0
             args[name] = date
@@ -316,34 +318,36 @@ class WrapBokeh(object):
             date = datetime.strptime(value, "%a %b %d %Y")
             args[name] = date
             date += timedelta(days=1)  # this fixes a bug where the date picked is one day behind the user selection
+
+        #else:
+        #    self.logger.error("_set_datep unrecognized format: {}".format(value))
+        #    date = datep.value
 
         datep.value = date
         self.widgets[name]["value"] = date
         return args
 
     def _set_dateslider(self, dateslider, name, value, args):
-        if value.split(".")[0].isdigit():  # epoch
+        if isinstance(value, datetime):
+            date = value
+
+        elif value.split(".")[0].isdigit():  # epoch
             date = datetime.fromtimestamp(int(value.split(".")[0]) / 1000)
             # TODO: set hours and minutes to 0:0
             args[name] = date
-        else:  # string date 'Mon Jun 18 2018'
-            date = datetime.strptime(value, "%a %b %d %Y")
-            args[name] = date
-            date += timedelta(days=1)  # this fixes a bug where the date picked is one day behind the user selection
+        else:
+            self.logger.error("_set_dateslider unrecognized format: {}".format(value))
+            date = dateslider.value
 
         dateslider.value = date
         self.widgets[name]["value"] = date
         return args
 
     def _set_multisel(self, multisel, name, value, args):
-        cache = multisel.value
-
-        if value in cache: cache.remove(value)
-        else: cache.append(value)
-
-        args[name] = cache
-        self.widgets[name]["value"] = cache
-        multisel.value = cache
+        values = args[name].split(",")
+        multisel.value = values
+        self.widgets[name]["value"] = values
+        args[name] = values
         return args
 
     def _set_button(self, b, name, value, args):
@@ -361,15 +365,9 @@ class WrapBokeh(object):
         return args
 
     def _set_toggle(self, toggle, name, value, args):
-        value = False
-        if args.get('callerWidget', False):
-            if args['callerWidget'] == name:
-                if not self.widgets[name]["value"]:
-                    value = True
-
-        toggle.active = value
-        self.widgets[name]["value"] = value
-        args[name] = value
+        if args[name] == 'true':    toggle.active = True
+        elif args[name] == 'false': toggle.active = False
+        self.widgets[name]["value"] = toggle.active
         return args
 
     def _set_dropdown(self, dropdown, name, value, args):
@@ -378,8 +376,6 @@ class WrapBokeh(object):
         return args
 
     def _set_fileinput(self, fileinput, name, value, args):
-        print(fileinput.value)
-        print(value)
         self.widgets[name]["value"] = value
         return args
 
@@ -389,15 +385,16 @@ class WrapBokeh(object):
         return args
 
     def _set_cbbg(self, cbbg, name, value, args):
-        active = [int(x) if x else None for x in value.split(",")]
+        if value is None: active = None
+        else: active = [int(x) if x else None for x in value.split(",")]
         self.widgets[name]["value"] = active
         cbbg.active = active
         return args
 
     def _set_rbg(self, rbg, name, value, args):
-        if value == 'NaN':
-            _value = rbg.value
-        if isinstance(value, str):
+        if value in ['NaN', None, 'null']:
+            _value = None
+        elif isinstance(value, str):
             _value = float(value) if "." in value else int(value)
         self.widgets[name]["value"] = _value
         rbg.active = _value
@@ -431,7 +428,7 @@ class WrapBokeh(object):
             self.logger.error("{} widget name duplicate".format(name))
             return False
 
-        pywrap_update_value = False
+        pywrap_update_value = True
         pywrap_trigger = True
 
         if isinstance(widget, (Slider, )):
@@ -509,7 +506,7 @@ class WrapBokeh(object):
             'obj': widget,
             'value': value,
             'value_field': value_field,
-            'value_cache': None,
+            'value_cache': None,  # used only for textinput
             'setter': setter,
             # internal stuff
             'pywrap_trigger': pywrap_trigger, # won't cause a JS trigger
@@ -532,6 +529,7 @@ class WrapBokeh(object):
         # on this page, and we want to trigger get_page_metrics()
         # which will get page metrics and come right back here
         if not args: return args, self.get_page_metrics()
+        if args['callerWidget'] == 'windowResize': return args, None
 
         # which ever widget the user touched, run its handler
         # so that its args can be correct
@@ -547,6 +545,8 @@ class WrapBokeh(object):
         # hanlded in the if.  The else (here) will populate widget values from
         # cache to the widget
         for key in self.widgets:
+            if key == w_name: continue
+
             if self.widgets[key].get("obj", False):
                 widget = self.widgets[key]  # handy shortcut
                 if widget.get("pywrap_update_value", False):
@@ -561,6 +561,10 @@ class WrapBokeh(object):
                         # is set to True.  the next caller widget can be any other widget,
                         # and that button (all buttons, need to be set back to False
                         args = widget["setter"](widget["obj"], key, False, args)
+
+                    else:
+                        w_value = args.get(key, None)
+                        args = widget["setter"](widget["obj"], key, w_value, args)
 
         self.logger.info("<-- {}".format(args))
         return args, None
