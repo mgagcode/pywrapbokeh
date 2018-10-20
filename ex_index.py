@@ -20,6 +20,10 @@ from flask import redirect, abort, Blueprint
 from flask import request
 from flask import current_app as app
 
+# !! WARNING dominate tag names can collide with bokeh names :(
+from dominate.tags import style
+from dominate.util import raw
+
 from numpy import pi, arange, sin, linspace
 
 from pywrapbokeh import WrapBokeh
@@ -29,7 +33,7 @@ def redirect_lookup_table(value):
     :param value: key to url
     :return: url, or None if value is not mapped
     """
-    if not value: return None
+    if value in [None, 'null']: return None
 
     app.logger.info(value)
     if   '1' in value: return "/a/"
@@ -43,9 +47,19 @@ def redirect_lookup_table(value):
 
 PAGE_URL = '/'
 
+widgets = None
+
 ex_index = Blueprint('ex_index', __name__)
 @ex_index.route(PAGE_URL, methods=['GET', 'POST'])
 def test_main():
+    global widgets
+
+    init_widgets()
+
+    # Create a dominate document, see https://github.com/Knio/dominate
+    widgets.dominate_document()
+    with widgets.dom_doc.body:  # add css elements here...
+        style(raw("""body {background-color:powderblue;}"""))
 
     args, _redirect_page_metrics = widgets.process_req(request)
     if not args: return _redirect_page_metrics
@@ -58,10 +72,6 @@ def test_main():
         # TODO: make a widget set value method?
         # TODO: or make a init function for all the widgets, and re-init them?
         return redirect(_redirect)
-
-    # Create a dominate document, see https://github.com/Knio/dominate
-    # this line should go after any "return redirect" statements
-    widgets.dominate_document()
 
     # reset page to initial values, if there are no parms
     # the widgets have state, so update if required
@@ -108,81 +118,84 @@ def test_main():
     return widgets.render(doc_layout)
 
 
-widgets = WrapBokeh(PAGE_URL, app.logger)
-widgets.add("s_age", Slider(title='Age',
-                            value=25,
-                            start=1,
-                            end=99,
-                            step=1,
-                            callback_policy='mouseup',
-                            width=200,
-                            css_classes=['s_age']))
+def init_widgets():
+    global widgets
 
-widgets.add("dp_birthday", DatePicker(title="Birthday",
-                                      min_date=None,
-                                      max_date=datetime.today(),
-                                      value=datetime.today(),
-                                      width=300,
-                                      css_classes=['dp_birthday']))
+    widgets = WrapBokeh(PAGE_URL, app.logger)
+    widgets.add("s_age", Slider(title='Age',
+                                value=25,
+                                start=1,
+                                end=99,
+                                step=1,
+                                callback_policy='mouseup',
+                                width=200,
+                                css_classes=['s_age']))
 
-widgets.add("msel_fruit", MultiSelect(options=[('0', 'Apples'),
-                                               ('1', 'Strawberries'),
-                                               ('2', 'Oranges'),
-                                               ('3', 'Grapefruit'),
-                                               ('4', 'Banannas')],
-                                      value=[],
-                                      title="Fruit",
-                                      css_classes=['msel_fruit']))
+    widgets.add("dp_birthday", DatePicker(title="Birthday",
+                                          min_date=None,
+                                          max_date=datetime.today(),
+                                          value=datetime.today(),
+                                          width=300,
+                                          css_classes=['dp_birthday']))
 
-widgets.add("ds_birthday", DateSlider(title="Birthday",
-                                      end=datetime.today(),
-                                      start=datetime.today() - timedelta(days=30),
-                                      step=1,
-                                      value=datetime.today(),
-                                      callback_policy='mouseup',
-                                      css_classes=['ds_birthday']))
+    widgets.add("msel_fruit", MultiSelect(options=[('Apples', 'Apples'),
+                                                   ('Strawberries', 'Strawberries'),
+                                                   ('Oranges', 'Oranges'),
+                                                   ('Grapefruit', 'Grapefruit'),
+                                                   ('Banannas', 'Banannas')],
+                                          value=[],
+                                          title="Fruit",
+                                          css_classes=['msel_fruit']))
 
-widgets.add("s_amp", Slider(title='Amplitude',
-                            value=1,
-                            start=0,
-                            end=2,
-                            step=0.1,
-                            callback_policy='mouseup',
-                            width=200,
-                            css_classes=['s_amp']))
+    widgets.add("ds_birthday", DateSlider(title="Birthday",
+                                          end=datetime.today(),
+                                          start=datetime.today() - timedelta(days=30),
+                                          step=1,
+                                          value=datetime.today(),
+                                          callback_policy='mouseup',
+                                          css_classes=['ds_birthday']))
 
-widgets.add("b_test", Button(label="Press me!", css_classes=['b_test']))
-widgets.add("toggle_1", Toggle(label="Toggle me!", css_classes=['toggle_1']))
-widgets.add("dropdn_1", Dropdown(label="Menu",
-                                 menu=[("First",  '0'),
-                                       ("Second", '1'),
-                                       None,
-                                       ("End",    '2')],
-                                 css_classes=['dropdn_1']))
+    widgets.add("s_amp", Slider(title='Amplitude',
+                                value=1,
+                                start=0,
+                                end=2,
+                                step=0.1,
+                                callback_policy='mouseup',
+                                width=200,
+                                css_classes=['s_amp']))
 
-widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
-                                           ('1', 'Ajax Stream Example'),
-                                           ('2', 'Form Example'),
-                                           ('3', 'Page C'),
-                                           ('4', 'Page D')],
-                                  value=None,
-                                  title="Select URL",
-                                  css_classes=['sel_nexturl']))
+    widgets.add("b_test", Button(label="Press me!", css_classes=['b_test']))
+    widgets.add("toggle_1", Toggle(label="Toggle me!", css_classes=['toggle_1']))
+    widgets.add("dropdn_1", Dropdown(label="Menu",
+                                     menu=[("First",  '0'),
+                                           ("Second", '1'),
+                                           None,
+                                           ("End",    '2')],
+                                     css_classes=['dropdn_1']))
 
-widgets.add("cbbg_music", CheckboxButtonGroup(labels=["Rock", "Country", "Classical"], active=[], css_classes=['cbbg_music']))
-widgets.add("cbg_music", CheckboxGroup(labels=["Rock", "Country", "Classical"], active=[], css_classes=['cbg_music']))
-widgets.add("rbg_music", RadioButtonGroup(labels=["Rock", "Country", "Classical"], active=None, css_classes=['rbg_music']))
-widgets.add("rg_music", RadioGroup(labels=["Rock", "Country", "Classical"], active=None, css_classes=['rg_music']))
+    widgets.add("sel_nexturl", Select(options=[('99', 'Select Next Page'),
+                                               ('1', 'Ajax Stream Example'),
+                                               ('2', 'Form Example'),
+                                               ('3', 'Page C'),
+                                               ('4', 'Page D')],
+                                      value=None,
+                                      title="Select URL",
+                                      css_classes=['sel_nexturl']))
 
-widgets.add("rslider_amp", RangeSlider(title='Amplitude',
-                                       value=(0.5, 1.5),
-                                       start=0,
-                                       end=2,
-                                       step=0.1,
-                                       callback_policy='mouseup',
-                                       width=200,
-                                       css_classes=['rslider_amp']))
+    widgets.add("cbbg_music", CheckboxButtonGroup(labels=["Rock0", "Country0", "Classical0"], active=[], css_classes=['cbbg_music']))
+    widgets.add("cbg_music", CheckboxGroup(labels=["Rock1", "Country1", "Classical1"], active=[], css_classes=['cbg_music']))
+    widgets.add("rbg_music", RadioButtonGroup(labels=["Rock2", "Country2", "Classical2"], active=None, css_classes=['rbg_music']))
+    widgets.add("rg_music", RadioGroup(labels=["Rock3", "Country3", "Classical3"], active=None, css_classes=['rg_music']))
+
+    widgets.add("rslider_amp", RangeSlider(title='Amplitude',
+                                           value=(0.5, 1.5),
+                                           start=0,
+                                           end=2,
+                                           step=0.1,
+                                           callback_policy='mouseup',
+                                           width=200,
+                                           css_classes=['rslider_amp']))
 
 
-widgets.init()
+    widgets.init()
 
