@@ -9,13 +9,16 @@ License: MIT License
 
 from datetime import datetime, timedelta
 from bokeh.embed import components
+from bokeh.layouts import layout
 from bokeh.models.callbacks import CustomJS
-from bokeh.models import Slider, RangeSlider
+from bokeh.models import Slider, RangeSlider, AjaxDataSource
 from bokeh.models.widgets.sliders import DateSlider
 from bokeh.models.widgets.inputs import DatePicker, MultiSelect, TextInput, Select
 from bokeh.models.widgets.buttons import Button, Toggle, Dropdown
-from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioButtonGroup, RadioGroup
-from bokeh.models.widgets import Div
+from bokeh.models.widgets import CheckboxButtonGroup, CheckboxGroup, RadioButtonGroup, RadioGroup, Tabs
+from bokeh.models.widgets import Div, Widget
+from bokeh.models import LayoutDOM
+from bokeh.core.properties import String
 
 from dominate.tags import *
 import dominate
@@ -23,6 +26,55 @@ from dominate.util import raw
 
 import random
 import string
+
+
+class FileInput(LayoutDOM):
+    """ Select File Widget
+    - bokeh doesn't come with one, but this will do the job.
+    - note that args name is NOT the name of the object, but is 'FileInput'
+      as that is hard coded into the java... see the postAndRedirect() call.
+
+    TODO: make an __init__ and pass in the name of the widget
+
+    usage:
+
+        if args.get("FileInput", False):
+            print(args.get("FileInput"))
+            #print(w.get_value("b_file")) <-- FIXME: this doesn't work... could fix with reverse lookup and assign
+
+    w = WrapBokeh(PAGE_URL, app.logger)
+    w.add("b_file", FileInput())
+    w.init()
+
+    see https://stackoverflow.com/questions/39206400/pass-file-information-from-html-file-selector-input-to-python-and-bokeh/42613897#42613897
+    see https://github.com/bokeh/bokeh/blob/master/sphinx/source/docs/user_guide/examples/extensions_putting_together_ts.py
+    This works by creating a <input type="file" /> but I can't see it in the html...
+    The path reported back is c:\fakepath, for security reasons
+    """
+    
+    __implementation__ = """
+        import * as p from "core/properties"
+        import {LayoutDOM, LayoutDOMView} from "models/layouts/layout_dom"
+
+        export class FileInputView extends LayoutDOMView
+          initialize: (options) ->
+            super(options)
+            input = document.createElement("input")
+            input.type = "file"
+            input.onchange = () =>
+              @model.value = input.value
+              postAndRedirect(window.location.href, {'FileInput': input.value}, 'FileInput')
+            @el.appendChild(input)
+        
+        export class FileInput extends LayoutDOM
+          default_view: FileInputView
+          type: "FileInput"
+          @define {
+            value: [ p.String ]
+          }
+        """
+
+    value = String()
 
 
 class WrapBokeh(object):
@@ -52,6 +104,7 @@ class WrapBokeh(object):
 
         self.widgets = {}
         self.dom_doc = None
+        self._layout = None
 
     def get_page_metrics(self):
         d = self.dom_doc
@@ -108,6 +161,10 @@ class WrapBokeh(object):
                  rel="stylesheet",
                  type="text/css")
             script(src="https://cdn.pydata.org/bokeh/release/bokeh-widgets-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+            link(href="https://cdn.pydata.org/bokeh/release/bokeh-tables-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
+                 rel="stylesheet",
+                 type="text/css")
+            script(src="https://cdn.pydata.org/bokeh/release/bokeh-tables-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
 
             script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js")
 
@@ -156,13 +213,20 @@ class WrapBokeh(object):
         return d
 
     def _make_args_parms(self):
-        _parms_all = "{"
+        _parms_all = ""
         _args_all = {}
         for w_name, w_params in self.widgets.items():
             if w_params.get("obj", False):
+
+                if isinstance(w_params.get("obj"), AjaxDataSource):
+                    # AjaxDataSource doesn't have a 'value' field that can be pulled, so for
+                    # all other objects, skip including its status. AjaxDataSource.selected.js_on_change()
+                    # is set in _set_all_callbacks()
+                    continue
+
                 _parms_all += """'{name}':{name}.{value},""".format(name=w_name, value=w_params["value_field"])
                 _args_all[w_name] = w_params["obj"]
-        _parms_all += "}"
+
         self.logger.debug(_parms_all)
 
         _code_all = """
@@ -170,18 +234,48 @@ class WrapBokeh(object):
                postAndRedirect('{}', params, 'callerWidget');
         """.format(_parms_all, self.url)
         self.logger.debug(_code_all)
-        return _args_all, _code_all
+        return _args_all, _parms_all
 
-    def _set_all_callbacks(self):
+    def _set_all_callbacks(self, all=False):
         """ attach a bokeh CustomJS that will be called when a widget is changed, that puts the
         value of the widget in the URL, for ALL widget callbacks.
         """
-        _args, _code = self._make_args_parms()
+        _args, _parms_all = self._make_args_parms()
 
         for key in self.widgets:
+            self.logger.debug("{} - init_done {}".format(key, self.widgets[key]["init_done"]))
+            if not all and self.widgets[key]["init_done"]: continue
+            self.widgets[key]["init_done"] = True
+
             if self.widgets[key]["obj"] is not None and self.widgets[key]["pywrap_trigger"]:
-                __code = _code.replace("callerWidget", key)
-                self.widgets[key]["obj"].callback = CustomJS(args=_args, code=__code)
+
+                if isinstance(self.widgets[key]["obj"], AjaxDataSource):
+                    # AjaxDataSource, and probably ColumnDataSource, get a different
+                    # JS event handler to access the row of data from the user selection
+                    # Note that _parms_all is included so that all other widget values are
+                    # included in the AjaxDataSource event
+                    _code_all = """var idx = source.selected["1d"]["indices"][0];"""
+
+                    if self.widgets[key]["value_field"] is not None:
+                        _code_all +="""var params = {{ {} '{}': idx + ',' + source.data["{}"][idx] }};""".format(_parms_all,
+                                                                                                                 key,
+                                                                                                                 self.widgets[key]["value_field"])
+                    else:
+                        _code_all +="""var params = {{ {} '{}': idx }};""".format(_parms_all, key)
+
+                    _code_all += """postAndRedirect('{}', params, '{}');""".format(self.url, key)
+
+                    __args = {**_args, **dict(source=self.widgets[key]["obj"])}
+
+                    callback = CustomJS(args=__args, code=_code_all)
+                    self.widgets[key]["obj"].selected.js_on_change('indices', callback)
+
+                else:
+                    _code_all = """
+                           var params = {{ {} }};
+                           postAndRedirect('{}', params, '{}');
+                    """.format(_parms_all, self.url, key)
+                    self.widgets[key]["obj"].callback = CustomJS(args=_args, code=_code_all)
 
     def _set_slider(self, slider, name, value, args):
         """ Slider, value is a string of an integer, set int
@@ -283,6 +377,12 @@ class WrapBokeh(object):
         self.widgets[name]["value"] = value
         return args
 
+    def _set_fileinput(self, fileinput, name, value, args):
+        print(fileinput.value)
+        print(value)
+        self.widgets[name]["value"] = value
+        return args
+
     def _set_select(self, sel, name, value, args):
         self.widgets[name]["value"] = value
         sel.value = value
@@ -303,13 +403,18 @@ class WrapBokeh(object):
         rbg.active = _value
         return args
 
-    def _set_textinput(self, sel, name, value, args):
-        if value == None: value = sel.placeholder
+    def _set_textinput(self, ti, name, value, args):
+        if value == None: value = ti.placeholder
         self.widgets[name]["value"] = value
-        sel.value = value
+        self.widgets[name]["value_cache"] = value
+        ti.value = value
         return args
 
-    def add(self, name, widget):
+    def _set_ajaxdatasource(self, ads, name, value, args):
+        self.widgets[name]["value"] = value
+        return args
+
+    def add(self, name, widget, other=None):
         """ Add a bokeh widget
         API
           WrapBokeh.add( <name_of_widget>, <bokeh API>(..., [css_classes=['sel_fruit']]))
@@ -356,6 +461,11 @@ class WrapBokeh(object):
             setter = self._set_button
             value = None
             pywrap_update_value = True
+        elif isinstance(widget, (FileInput, )):
+            value_field = None
+            setter = self._set_fileinput
+            value = None
+            pywrap_trigger = False
         elif isinstance(widget, (Toggle, )):
             value_field = "active"
             setter = self._set_toggle
@@ -382,6 +492,15 @@ class WrapBokeh(object):
             value = widget.value
             pywrap_update_value = True
             pywrap_trigger = False
+        elif isinstance(widget, (AjaxDataSource, )):
+            if other is None:
+                self.logger.info("{} AjaxDataSource will return idx of user selected row".format(name))
+                # its also possible to get the data column value by specifying the name
+                # of the field to return in 'other'
+            value_field = other
+            value = None
+            setter = self._set_ajaxdatasource
+            pywrap_update_value = False
         else:
             self.logger.error("4Unsupported widget class of name {}".format(name))
             return False
@@ -390,17 +509,18 @@ class WrapBokeh(object):
             'obj': widget,
             'value': value,
             'value_field': value_field,
+            'value_cache': None,
             'setter': setter,
             # internal stuff
             'pywrap_trigger': pywrap_trigger, # won't cause a JS trigger
                                               # needed for TextInput() items
             'pywrap_update_value': pywrap_update_value,
+            'init_done': False,
         }
         return True
 
     def process_req(self, req):
         """ Updates the state of every widget based on the values of each widget in args
-        - sets the callback for each widget
         :param args: dict of every widget value by name
         :return args dict, redirect render
         """
@@ -422,20 +542,34 @@ class WrapBokeh(object):
             args = w["setter"](w["obj"], w_name, w_value, args)
 
         # scan for items that need a manual value update, !TextInput!
+        # These items are items that are NOT in the args list UNLESS they
+        # were the callerWidget.  If they are the callerWidget, they are
+        # hanlded in the if.  The else (here) will populate widget values from
+        # cache to the widget
         for key in self.widgets:
-            if self.widgets[key].get("obj", None):
-                if self.widgets[key].get("pywrap_update_value", False):
-                    w_value = args.get(key, None)
-                    widget = self.widgets[key]
-                    args = widget["setter"](widget["obj"], key, w_value, args)
+            if self.widgets[key].get("obj", False):
+                widget = self.widgets[key]  # handy shortcut
+                if widget.get("pywrap_update_value", False):
+
+                    if isinstance(widget["obj"], (TextInput, )):
+                        w_value = args.get(key, None)
+                        if w_value is None: w_value = widget["value_cache"]
+                        args = widget["setter"](widget["obj"], key, w_value, args)
+
+                    elif isinstance(widget["obj"], (Button, )):
+                        # when a button is pressed, it is the caller widget, and its value
+                        # is set to True.  the next caller widget can be any other widget,
+                        # and that button (all buttons, need to be set back to False
+                        args = widget["setter"](widget["obj"], key, False, args)
 
         self.logger.info("<-- {}".format(args))
         return args, None
 
-    def init(self):
+    def init(self, all=False):
         """ init - call this after all the widgets on a page have been created
+        :param all, set to re-init all widgets
         """
-        self._set_all_callbacks()
+        self._set_all_callbacks(all)
 
     def get(self, name):
         """ get bokeh object by name
@@ -462,24 +596,17 @@ class WrapBokeh(object):
             self.logger.error("{} widget not found".format(name))
             return None
 
-        if isinstance(self.widgets[name], (Slider, RangeSlider,
-                                           DatePicker,
-                                           MultiSelect,
-                                           Dropdown,
-                                           Select,
-                                           TextInput, )):
+        if isinstance(self.widgets[name]["obj"], (Slider, RangeSlider, DatePicker, MultiSelect,
+                                                  Dropdown, Select, TextInput, FileInput, )):
             return self.widgets[name]["obj"].value
-        elif isinstance(self.widgets[name], (Button, )):
+        elif isinstance(self.widgets[name]["obj"], (Button, AjaxDataSource, )):
             # use cached value
             return self.widgets[name]["value"]
-        elif isinstance(self.widgets[name], (Toggle,
-                                             CheckboxButtonGroup,
-                                             CheckboxGroup,
-                                             RadioButtonGroup,
-                                             RadioGroup, )):
+        elif isinstance(self.widgets[name]["obj"], (Toggle, CheckboxButtonGroup, CheckboxGroup,
+                                                    RadioButtonGroup, RadioGroup, )):
             return self.widgets[name]["obj"].active
 
-        self.logger.error("Unsupported widget class of name {}".format(name))
+        self.logger.error("Unsupported widget class of name {} type {}".format(name, type(self.widgets[name]["obj"])))
         return None
 
     def render_div(self, layout, cls=None):
@@ -509,7 +636,22 @@ class WrapBokeh(object):
             raw(_div)
         self.dom_doc.add(d)
 
-    def render(self, layout):
+    def render_incremental(self, layout):
+        if self.dom_doc is None:
+            self.logger.error("Dominate doc is None, call dominate_document() first")
+            return "<p>Error: Dominate doc is None, call dominate_document() first</p>"
+
+        _script, _div = components(layout)
+        self.dom_doc.body += raw(_script)
+        self.dom_doc.body += raw(_div)
+
+    def render_append_html(self, dominate_html_item):
+        self.dom_doc.body += dominate_html_item
+
+    def render_fini(self):
+        return "{}".format(self.dom_doc)
+
+    def render(self, layout, footnote=None):
         """ render the layout in the current dominate document
         :param layout: bokeh layout object
         :return: dominate document with bokeh objects rendered within it
@@ -521,6 +663,7 @@ class WrapBokeh(object):
         _script, _div = components(layout)
         self.dom_doc.body += raw(_script)
         self.dom_doc.body += raw(_div)
+        if footnote: self.dom_doc.body += footnote
         return "{}".format(self.dom_doc)
 
     def add_css(self, name, css_dict):
@@ -553,3 +696,7 @@ class WrapBokeh(object):
 
     def dom_doc(self):
         return self.dom_doc
+
+    def layout(self):
+        if self._layout is None: self._layout = layout()
+        return self._layout
