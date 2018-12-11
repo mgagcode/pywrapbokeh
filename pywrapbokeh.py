@@ -9,7 +9,6 @@ License: MIT License
 
 from datetime import datetime, timedelta
 from bokeh.embed import components
-from bokeh.layouts import layout
 from bokeh.models.callbacks import CustomJS
 from bokeh.models import Slider, RangeSlider, AjaxDataSource
 from bokeh.models.widgets.sliders import DateSlider
@@ -138,7 +137,7 @@ class WrapBokeh(object):
 
         return "{}".format(d)
 
-    def dominate_document(self, title="pywrapBokeh", bokeh_version='1.0.0rc3'):
+    def dominate_document(self, title="pywrapBokeh", bokeh_version='1.0.1', local=True):
         """ Create dominate document, see https://github.com/Knio/dominate
 
         Populates the required bokeh/jquery links
@@ -152,20 +151,30 @@ class WrapBokeh(object):
         """
         d = dominate.document(title=title)
         with d.head:
-            link(href="https://cdn.pydata.org/bokeh/dev/bokeh-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
-                 rel="stylesheet",
-                 type="text/css")
-            script(src="https://cdn.pydata.org/bokeh/dev/bokeh-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
-            link(href="https://cdn.pydata.org/bokeh/dev/bokeh-widgets-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
-                 rel="stylesheet",
-                 type="text/css")
-            script(src="https://cdn.pydata.org/bokeh/dev/bokeh-widgets-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
-            link(href="https://cdn.pydata.org/bokeh/dev/bokeh-tables-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
-                 rel="stylesheet",
-                 type="text/css")
-            script(src="https://cdn.pydata.org/bokeh/dev/bokeh-tables-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+            if local:
+                link(href="/static/bokeh-{bokeh_version}.min.css".format(bokeh_version=bokeh_version), rel="stylesheet", type="text/css")
+                script(src="/static/bokeh-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+                link(href="/static/bokeh-widgets-{bokeh_version}.min.css".format(bokeh_version=bokeh_version), rel="stylesheet", type="text/css")
+                script(src="/static/bokeh-widgets-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+                link(href="/static/bokeh-tables-{bokeh_version}.min.css".format(bokeh_version=bokeh_version), rel="stylesheet", type="text/css")
+                script(src="/static/bokeh-tables-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
 
-            script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js")
+                script(src="/static/jquery.min.js")
+            else:
+                link(href="https://cdn.pydata.org/bokeh/release/bokeh-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
+                     rel="stylesheet",
+                     type="text/css")
+                script(src="https://cdn.pydata.org/bokeh/release/bokeh-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+                link(href="https://cdn.pydata.org/bokeh/release/bokeh-widgets-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
+                     rel="stylesheet",
+                     type="text/css")
+                script(src="https://cdn.pydata.org/bokeh/release/bokeh-widgets-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+                link(href="https://cdn.pydata.org/bokeh/release/bokeh-tables-{bokeh_version}.min.css".format(bokeh_version=bokeh_version),
+                     rel="stylesheet",
+                     type="text/css")
+                script(src="https://cdn.pydata.org/bokeh/release/bokeh-tables-{bokeh_version}.min.js".format(bokeh_version=bokeh_version))
+
+                script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js")
 
             meta(charset="UTF-8")
 
@@ -246,7 +255,7 @@ class WrapBokeh(object):
             if not all and self.widgets[key]["init_done"]: continue
             self.widgets[key]["init_done"] = True
 
-            if self.widgets[key]["obj"] is not None and self.widgets[key]["pywrap_trigger"]:
+            if self.widgets[key]["obj"] is not None and self.widgets[key]["refresh_cb"]:
 
                 if isinstance(self.widgets[key]["obj"], AjaxDataSource):
                     # AjaxDataSource, and probably ColumnDataSource, get a different
@@ -411,7 +420,7 @@ class WrapBokeh(object):
         self.widgets[name]["value"] = value
         return args
 
-    def add(self, name, widget, other=None):
+    def add(self, name, widget, other=None, refresh_cb=True):
         """ Add a bokeh widget
         API
           WrapBokeh.add( <name_of_widget>, <bokeh API>(..., [css_classes=['sel_fruit']]))
@@ -429,7 +438,6 @@ class WrapBokeh(object):
             return False
 
         pywrap_update_value = True
-        pywrap_trigger = True
 
         if isinstance(widget, (Slider, )):
             value_field = 'value'
@@ -457,12 +465,11 @@ class WrapBokeh(object):
             value_field = None
             setter = self._set_button
             value = None
-            pywrap_update_value = True
         elif isinstance(widget, (FileInput, )):
             value_field = None
             setter = self._set_fileinput
             value = None
-            pywrap_trigger = False
+            refresh_cb = False
         elif isinstance(widget, (Toggle, )):
             value_field = "active"
             setter = self._set_toggle
@@ -487,13 +494,13 @@ class WrapBokeh(object):
             value_field = 'value'
             setter = self._set_textinput
             value = widget.value
-            pywrap_update_value = True
-            pywrap_trigger = False
+            refresh_cb = False
         elif isinstance(widget, (AjaxDataSource, )):
             if other is None:
-                self.logger.info("{} AjaxDataSource will return idx of user selected row".format(name))
+                #self.logger.info("{} AjaxDataSource will return idx of user selected row".format(name))
                 # its also possible to get the data column value by specifying the name
                 # of the field to return in 'other'
+                pass
             value_field = other
             value = None
             setter = self._set_ajaxdatasource
@@ -509,8 +516,7 @@ class WrapBokeh(object):
             'value_cache': None,  # used only for textinput
             'setter': setter,
             # internal stuff
-            'pywrap_trigger': pywrap_trigger, # won't cause a JS trigger
-                                              # needed for TextInput() items
+            'refresh_cb': refresh_cb,    # True/False for the refresh callback to be installed
             'pywrap_update_value': pywrap_update_value,
             'init_done': False,
         }
@@ -634,6 +640,7 @@ class WrapBokeh(object):
             cls = ''.join(random.choices(string.ascii_uppercase + string.digits, k=self.LEN_RANDOM_CLASS))
 
         _script, _div = components(layout)
+
         d = div(cls=cls)
         with d:
             raw(_script)
@@ -698,9 +705,10 @@ class WrapBokeh(object):
             with self.dom_doc.body:
                 style(raw(_css))
 
-    def dom_doc(self):
+    def dom_document(self):
         return self.dom_doc
 
-    def layout(self):
-        if self._layout is None: self._layout = layout()
-        return self._layout
+    def add_js(self, js):
+        with self.dom_doc.body:
+            script(raw(js))
+
